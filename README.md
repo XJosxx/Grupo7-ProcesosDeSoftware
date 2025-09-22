@@ -41,12 +41,30 @@ junto con Flutter, de Google, nos apoyará bastante en la presentación visual y
 
 Framework(s) seleccionado(s): \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 
+JWT(Json Web Tokens)
 Justificación:
+Simplicidad para 3 usuarios: No necesitas complicadas sesiones en el servidor. Cada petición contiene toda la información necesaria, haciendo el sistema más simple de mantener.
+Escalabilidad inmediata: Si después quieres agregar más usuarios, JWT funciona igual sin cambiar nada en la autenticación.
+Control de permisos integrado: En el mismo token puedes incluir el rol de cada usuario (admin, supervisor, empleado) para controlar qué puede hacer cada uno en el inventario.
+Mayor Facilidad ya que JWT elimina complejidad innecesaria mientras mantiene la aplicación segura y preparada para crecer
 
 
+Flutter flow (para el frontend)
+Justificación:
+Nos permite diseñar la aplicación móvil de manera visual y rápida.
+Facilita generar aplicaciones que funcionan en Android (y en el futuro también en iOS) sin tener que programar todo a mano.
+Tiene integración con la base de datos y con la API del servidor, lo que simplifica la conexión con Spring Boot.
+Genera una interfaz amigable e intuitiva, adaptada al perfil de la dueña y vendedores.
+Nos ayuda a centrarnos en las funcionalidades y no solo en la programación detallada.
 
 
-
+String boot  (para el backend)
+Justificación:
+Permite desarrollar aplicaciones de manera rápida y ordenada.
+Facilita la conexión con la base de datos que usaremos para el inventario, ventas y compras.
+Es un framework muy usado en la industria, lo que asegura estabilidad y buenas prácticas.
+Nos ayuda a separar bien la lógica del negocio (reglas) de la interfaz (lo que ve el usuario).
+Hace que el sistema sea escalable, es decir, que en un futuro se pueda ampliar sin rehacerlo desde cero.
 
 
 Evidencia de configuración de GitHub: (enlace al repositorio)
