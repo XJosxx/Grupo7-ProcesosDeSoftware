@@ -7,6 +7,15 @@ Arquitectura seleccionada: Modelo - Vista - Controlador (MVC)
 
 Justificación:
 
+El patrón MVC permite separar la lógica de negocio, la presentación y el control de flujo de la aplicación, logrando.
+
+Mantenimiento más sencillo, ya que cada capa tiene responsabilidades claras.
+
+Reutilización de código, pues el modelo puede ser usado por distintas interfaces.
+
+Escalabilidad, lo que facilita añadir nuevas funciones sin afectar el resto del sistema.
+
+Trabajo en equipo más ordenado, cada integrante puede trabajar en una capa distinta (Modelo, Vista o Controlador).
 
 
 
