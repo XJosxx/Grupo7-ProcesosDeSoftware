@@ -1,8 +1,0 @@
-# Plantilla de propiedades para conexión MySQL
-# Renombra a db.properties local y añade tus credenciales en tu máquina (NO subir al repo)
-
-db.host=localhost
-db.port=3306
-db.name=apptienda
-db.user=tu_usuario
-db.password=tu_password
