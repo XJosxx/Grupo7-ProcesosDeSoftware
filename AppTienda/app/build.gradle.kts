@@ -35,7 +35,7 @@ android {
 }
 
 dependencies {
-
+    implementation("org.xerial:sqlite-jdbc:3.46.0.0")
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.constraintlayout)
