@@ -321,27 +321,7 @@ Edge cases:
 - Concurrency: accesos concurrentes a DB en Android deben ser manejados (actualmente las transacciones previenen inconsistencia por hilo, pero revisar si llamadas vienen desde hilos distintos y usar syncronización si necesario).
 
 
-## Resumen de lo hecho en esta iteración
-
-- Inventarié archivos principales del proyecto.
-- Leí y documenté los ficheros de configuración más importantes y módulos clave: DB (`DatabaseHelper`), repositorios, servicios de autenticación y productos, `AuthManager`, utilidades JWT y dos actividades (AuthActivity y MainActivity).
-- Creé este archivo `PROJECT_DOCUMENTATION.md` con la documentación inicial y la lista de archivos pendientes.
 
 
-## ¿Qué hago ahora?
-
-Puedo continuar automáticamente y documentar:
-- Todos los POJOs en `app/src/main/java/com/example/apptienda/modelos/`.
-- Los adaptadores en `adapter/` y su relación con layouts.
-- Los fragments bajo `ui/`.
-
-Indica si prefieres:
-- A) Que continúe y genere documentación completa para TODO el código (puede tardar y generar un documento grande). 
-- B) Que lo haga por fases (por ejemplo: 1) modelos + adapters, 2) UI + fragments, 3) networking y pruebas).
-
-Si confirmas, procederé con la siguiente fase (empezaría por los POJOs en `modelos/` y generaría descripciones por campo y métodos).
 
 
----
-
-Archivo generado automáticamente — puedo actualizarlo y fragmentarlo en `docs/` si prefieres una estructura más navegable.
