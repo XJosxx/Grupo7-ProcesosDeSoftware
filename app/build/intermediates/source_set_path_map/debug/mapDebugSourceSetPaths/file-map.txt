@@ -1,0 +1,51 @@
+com.example.apptienda.app-sqlite-2.4.0-0 C:\Users\JONATAN\.gradle\caches\8.13\transforms\10aeb25708a8d164f6302de489dd2994\transformed\sqlite-2.4.0\res
+com.example.apptienda.app-slidingpanelayout-1.2.0-1 C:\Users\JONATAN\.gradle\caches\8.13\transforms\21a2157d12b1c59af90afb0a24812269\transformed\slidingpanelayout-1.2.0\res
+com.example.apptienda.app-fragment-ktx-1.6.2-2 C:\Users\JONATAN\.gradle\caches\8.13\transforms\222f513684c706ef631dc9ac47b8270c\transformed\fragment-ktx-1.6.2\res
+com.example.apptienda.app-activity-ktx-1.8.0-3 C:\Users\JONATAN\.gradle\caches\8.13\transforms\23663f71b777737b763cc97c60c27ac8\transformed\activity-ktx-1.8.0\res
+com.example.apptienda.app-fragment-1.6.2-4 C:\Users\JONATAN\.gradle\caches\8.13\transforms\281d622a6dc1db589d6936b654018ee2\transformed\fragment-1.6.2\res
+com.example.apptienda.app-window-1.0.0-5 C:\Users\JONATAN\.gradle\caches\8.13\transforms\293b2332bb7a02280a1a8d838c37bab8\transformed\window-1.0.0\res
+com.example.apptienda.app-navigation-common-2.7.5-6 C:\Users\JONATAN\.gradle\caches\8.13\transforms\40f08ed909b036048b660fd98bc89a9c\transformed\navigation-common-2.7.5\res
+com.example.apptienda.app-core-runtime-2.2.0-7 C:\Users\JONATAN\.gradle\caches\8.13\transforms\45d9472dbf05f3690606338344720094\transformed\core-runtime-2.2.0\res
+com.example.apptienda.app-lifecycle-viewmodel-savedstate-2.6.2-8 C:\Users\JONATAN\.gradle\caches\8.13\transforms\4c5ba190751e23b9dd297651d13e287e\transformed\lifecycle-viewmodel-savedstate-2.6.2\res
+com.example.apptienda.app-transition-1.4.1-9 C:\Users\JONATAN\.gradle\caches\8.13\transforms\508541f4bf2e3188ebdaccadb9191b98\transformed\transition-1.4.1\res
+com.example.apptienda.app-lifecycle-process-2.6.2-10 C:\Users\JONATAN\.gradle\caches\8.13\transforms\53502f8cea186e6cd7695cfd9bff94eb\transformed\lifecycle-process-2.6.2\res
+com.example.apptienda.app-emoji2-1.2.0-11 C:\Users\JONATAN\.gradle\caches\8.13\transforms\555f5da7a74523e4a646c6f47a9ca344\transformed\emoji2-1.2.0\res
+com.example.apptienda.app-core-ktx-1.12.0-12 C:\Users\JONATAN\.gradle\caches\8.13\transforms\591f2beb013b6f3f803d44583204b1da\transformed\core-ktx-1.12.0\res
+com.example.apptienda.app-navigation-fragment-2.7.5-13 C:\Users\JONATAN\.gradle\caches\8.13\transforms\5f502a726e9e8f9d72e3e1c7c9517909\transformed\navigation-fragment-2.7.5\res
+com.example.apptienda.app-startup-runtime-1.1.1-14 C:\Users\JONATAN\.gradle\caches\8.13\transforms\5fd3a06ab26b07c667bb078b01c4b701\transformed\startup-runtime-1.1.1\res
+com.example.apptienda.app-viewpager2-1.0.0-15 C:\Users\JONATAN\.gradle\caches\8.13\transforms\6672230da89ae852836c09c23c4bb8aa\transformed\viewpager2-1.0.0\res
+com.example.apptienda.app-activity-1.8.0-16 C:\Users\JONATAN\.gradle\caches\8.13\transforms\6dc13c49923e8229ad1eee145b5af304\transformed\activity-1.8.0\res
+com.example.apptienda.app-savedstate-ktx-1.2.1-17 C:\Users\JONATAN\.gradle\caches\8.13\transforms\6fb2ef12fccb75101ed69848959a5538\transformed\savedstate-ktx-1.2.1\res
+com.example.apptienda.app-cardview-1.0.0-18 C:\Users\JONATAN\.gradle\caches\8.13\transforms\7331091f94cf58e51acd7be9963ac3ea\transformed\cardview-1.0.0\res
+com.example.apptienda.app-savedstate-1.2.1-19 C:\Users\JONATAN\.gradle\caches\8.13\transforms\7a6242662372944d1c3fa4d671f798fc\transformed\savedstate-1.2.1\res
+com.example.apptienda.app-glide-4.16.0-20 C:\Users\JONATAN\.gradle\caches\8.13\transforms\7f537fdc304d81ca353c6cbab8e37ee7\transformed\glide-4.16.0\res
+com.example.apptienda.app-drawerlayout-1.1.1-21 C:\Users\JONATAN\.gradle\caches\8.13\transforms\7f5546c3c357655313f98c197cd1738d\transformed\drawerlayout-1.1.1\res
+com.example.apptienda.app-core-1.12.0-22 C:\Users\JONATAN\.gradle\caches\8.13\transforms\8aeddbda9b05221b9d86e7004b31595d\transformed\core-1.12.0\res
+com.example.apptienda.app-emoji2-views-helper-1.2.0-23 C:\Users\JONATAN\.gradle\caches\8.13\transforms\96a97f1e04ed4caddab980942cf32e86\transformed\emoji2-views-helper-1.2.0\res
+com.example.apptienda.app-navigation-ui-2.7.5-24 C:\Users\JONATAN\.gradle\caches\8.13\transforms\a116f244b81c6235dc8c6d56a2b516b8\transformed\navigation-ui-2.7.5\res
+com.example.apptienda.app-appcompat-resources-1.6.1-25 C:\Users\JONATAN\.gradle\caches\8.13\transforms\b203fa466d7ccf993296afc7f9418aeb\transformed\appcompat-resources-1.6.1\res
+com.example.apptienda.app-coordinatorlayout-1.1.0-26 C:\Users\JONATAN\.gradle\caches\8.13\transforms\b41364dfa6b282925341bb25c362ead7\transformed\coordinatorlayout-1.1.0\res
+com.example.apptienda.app-lifecycle-livedata-2.6.2-27 C:\Users\JONATAN\.gradle\caches\8.13\transforms\b765d74d1d3e7c799a719f778afcc079\transformed\lifecycle-livedata-2.6.2\res
+com.example.apptienda.app-lifecycle-runtime-2.6.2-28 C:\Users\JONATAN\.gradle\caches\8.13\transforms\bac633df48bf18a21c58a6f215c74047\transformed\lifecycle-runtime-2.6.2\res
+com.example.apptienda.app-constraintlayout-2.1.4-29 C:\Users\JONATAN\.gradle\caches\8.13\transforms\bd551bc6e0f035d5541830190798e20d\transformed\constraintlayout-2.1.4\res
+com.example.apptienda.app-annotation-experimental-1.3.0-30 C:\Users\JONATAN\.gradle\caches\8.13\transforms\c2c57ecd556d1c7dc152a28e4e1425b7\transformed\annotation-experimental-1.3.0\res
+com.example.apptienda.app-sqlite-framework-2.4.0-31 C:\Users\JONATAN\.gradle\caches\8.13\transforms\c52bfd8cbced42a10d079ce5886c701e\transformed\sqlite-framework-2.4.0\res
+com.example.apptienda.app-lifecycle-livedata-core-ktx-2.6.2-32 C:\Users\JONATAN\.gradle\caches\8.13\transforms\c8fc8f4590f80b2f2869e89e2d81ab0a\transformed\lifecycle-livedata-core-ktx-2.6.2\res
+com.example.apptienda.app-appcompat-1.6.1-33 C:\Users\JONATAN\.gradle\caches\8.13\transforms\c95ca12bfed8fae475e0c5092a11be05\transformed\appcompat-1.6.1\res
+com.example.apptienda.app-lifecycle-livedata-core-2.6.2-34 C:\Users\JONATAN\.gradle\caches\8.13\transforms\cbb5605ace265994f04a4ae6f7373914\transformed\lifecycle-livedata-core-2.6.2\res
+com.example.apptienda.app-lifecycle-viewmodel-ktx-2.6.2-35 C:\Users\JONATAN\.gradle\caches\8.13\transforms\cdaa73555bd82ab197f4c9d067e089ca\transformed\lifecycle-viewmodel-ktx-2.6.2\res
+com.example.apptienda.app-lifecycle-viewmodel-2.6.2-36 C:\Users\JONATAN\.gradle\caches\8.13\transforms\cec1aae94fa300b2dd08530155e55d8b\transformed\lifecycle-viewmodel-2.6.2\res
+com.example.apptienda.app-material-1.10.0-37 C:\Users\JONATAN\.gradle\caches\8.13\transforms\df77ffc768f76b87c74edecca5deedc7\transformed\material-1.10.0\res
+com.example.apptienda.app-navigation-runtime-2.7.5-38 C:\Users\JONATAN\.gradle\caches\8.13\transforms\e235964a1c9fed147c870b24df6be096\transformed\navigation-runtime-2.7.5\res
+com.example.apptienda.app-recyclerview-1.1.0-39 C:\Users\JONATAN\.gradle\caches\8.13\transforms\e4b159635912969ac8a823a81a0e1787\transformed\recyclerview-1.1.0\res
+com.example.apptienda.app-profileinstaller-1.3.0-40 C:\Users\JONATAN\.gradle\caches\8.13\transforms\efd0d7cd5cb9236f343e236410a8e8c7\transformed\profileinstaller-1.3.0\res
+com.example.apptienda.app-lifecycle-runtime-ktx-2.6.2-41 C:\Users\JONATAN\.gradle\caches\8.13\transforms\f686fac3a2b373e9844d2dcb495c132f\transformed\lifecycle-runtime-ktx-2.6.2\res
+com.example.apptienda.app-room-runtime-2.6.0-42 C:\Users\JONATAN\.gradle\caches\8.13\transforms\fc3d9c7bdc17430ba8b066af6c7ba2ba\transformed\room-runtime-2.6.0\res
+com.example.apptienda.app-pngs-43 C:\Users\JONATAN\Desktop\PROCESOS V3\app\build\generated\res\pngs\debug
+com.example.apptienda.app-resValues-44 C:\Users\JONATAN\Desktop\PROCESOS V3\app\build\generated\res\resValues\debug
+com.example.apptienda.app-updated_navigation_xml-45 C:\Users\JONATAN\Desktop\PROCESOS V3\app\build\generated\updated_navigation_xml\debug
+com.example.apptienda.app-packageDebugResources-46 C:\Users\JONATAN\Desktop\PROCESOS V3\app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
+com.example.apptienda.app-packageDebugResources-47 C:\Users\JONATAN\Desktop\PROCESOS V3\app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
+com.example.apptienda.app-debug-48 C:\Users\JONATAN\Desktop\PROCESOS V3\app\build\intermediates\merged_res\debug\mergeDebugResources
+com.example.apptienda.app-debug-49 C:\Users\JONATAN\Desktop\PROCESOS V3\app\src\debug\res
+com.example.apptienda.app-main-50 C:\Users\JONATAN\Desktop\PROCESOS V3\app\src\main\res
