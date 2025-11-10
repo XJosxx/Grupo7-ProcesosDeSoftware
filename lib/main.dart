@@ -1,6 +1,5 @@
-
 import 'package:flutter/material.dart';
-import 'package:tienda_interfaz/pages/login_page.dart';
+import 'package:tienda_interfazw/screens/LoginScreen.dart';
 
 void main() {
   runApp(const StitchApp());
@@ -17,16 +16,16 @@ class StitchApp extends StatelessWidget {
       theme: ThemeData(
         fontFamily: 'Inter',
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF4A90E2), // Un azul más brillante y moderno
-          primary: const Color(0xFF4A90E2),
-          secondary: const Color(0xFF50E3C2), // Un verde azulado como color secundario
+          seedColor: const Color(0xFF1E40AF), // Nuevo Azul Primario
+          primary: const Color(0xFF1E40AF),
+          secondary: const Color(0xFF84CC16), // Nuevo Verde Lima Secundario
           background: const Color(0xFFF9FAFB),
           surface: Colors.white,
           error: const Color(0xFFD0021B),
         ),
         useMaterial3: true,
       ),
-      home: const LoginPage(), // Set LoginPage as the home screen
+      home: const LoginScreen(), // Set LoginScreen as the home screen
     );
   }
 }

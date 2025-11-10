@@ -1,3 +1,5 @@
+// home_page.dart (Modificado)
+
 import 'package:flutter/material.dart';
 import '../widgets/summary_card.dart';
 import '../widgets/activity_card.dart';
@@ -7,26 +9,43 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Definimos el nuevo color primario para usar en AppBar
+    final Color primaryColor = Theme.of(context).colorScheme.primary;
+    final Color secondaryColor = Theme.of(context).colorScheme.secondary;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Hola, Nely!"),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 1,
+        // Nuevo: Usa el color principal del tema
+        backgroundColor: primaryColor,
+        // Nuevo: Texto e íconos blancos para contrastar
+        foregroundColor: Colors.white,
+        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () {},
+          onPressed: () { /* TODO: Implementar menú lateral */ },
         ),
         actions: [
+          // Funcionalidad: Círculo para ver perfil
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: CircleAvatar(
-              backgroundColor: Colors.grey[300],
-              radius: 16,
+            child: GestureDetector(
+              onTap: () {
+                // TODO: Implementar navegación a la pantalla de Perfil
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Navegar a Perfil...')),
+                );
+              },
+              child: CircleAvatar(
+                backgroundColor: Colors.white.withOpacity(0.8),
+                radius: 18,
+                child: Icon(Icons.person, color: primaryColor, size: 20),
+              ),
             ),
           ),
         ],
       ),
+      // ... (el resto del cuerpo del SingleChildScrollView permanece igual)
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -43,31 +62,33 @@ class HomePage extends StatelessWidget {
               mainAxisSpacing: 12,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              children: const [
+              children: [
+                // Uso de colores del tema para las tarjetas
                 SummaryCard(
                   icon: Icons.attach_money,
                   title: "Ventas totales",
                   value: "\$12,500",
-                  color: Color(0xFFF0F8FF),
-                  iconColor: Colors.blue,
+                  color: primaryColor.withOpacity(0.1),
+                  iconColor: primaryColor,
                 ),
                 SummaryCard(
                   icon: Icons.inventory_2,
                   title: "Productos",
                   value: "350",
-                  color: Color(0xFFF7FEE7),
-                  iconColor: Colors.lime,
+                  color: secondaryColor.withOpacity(0.1),
+                  iconColor: secondaryColor,
                 ),
                 SummaryCard(
                   icon: Icons.group,
                   title: "Clientes",
                   value: "120",
-                  color: Color(0xFFFFF7ED),
+                  color: Colors.orange.withOpacity(0.1),
                   iconColor: Colors.orange,
                   fullWidth: true,
                 ),
               ],
             ),
+            // ... (el resto de "Actividad reciente" permanece igual)
             const SizedBox(height: 24),
             const Text(
               "Actividad reciente",
