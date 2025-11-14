@@ -1,51 +1,6 @@
 <resources>
-    <!-- App -->
-    <string name="app_name">AppTienda</string>
-    
-    <!-- Navigation -->
-    <string name="title_home">Inicio</string>
-    <string name="title_products">Productos</string>
-    <string name="title_sales">Ventas</string>
-    <string name="title_reports">Reportes</string>
-    <string name="title_profile">Perfil</string>
-
-    <!-- Auth -->
-    <string name="login">Iniciar Sesión</string>
-    <string name="register">Registrarse</string>
-    <string name="email">Correo electrónico</string>
-    <string name="password">Contraseña</string>
-    <string name="forgot_password">¿Olvidaste tu contraseña?</string>
-    <string name="login_error">Error al iniciar sesión</string>
-
-    <!-- Products -->
-    <string name="add_product">Agregar Producto</string>
-    <string name="edit_product">Editar Producto</string>
-    <string name="product_name">Nombre del producto</string>
-    <string name="product_price">Precio</string>
-    <string name="product_stock">Stock</string>
-    <string name="product_category">Categoría</string>
-    <string name="save">Guardar</string>
-    <string name="cancel">Cancelar</string>
-    <string name="delete">Eliminar</string>
-    <string name="confirm_delete">¿Está seguro de eliminar este producto?</string>
-
-    <!-- Sales -->
-    <string name="new_sale">Nueva Venta</string>
-    <string name="sale_details">Detalles de Venta</string>
-    <string name="quantity">Cantidad</string>
-    <string name="total">Total</string>
-    <string name="confirm_sale">Confirmar Venta</string>
-
-    <!-- Reports -->
-    <string name="daily_sales">Ventas Diarias</string>
-    <string name="monthly_sales">Ventas Mensuales</string>
-    <string name="stock_report">Reporte de Stock</string>
-    <string name="generate_report">Generar Reporte</string>
-
-    <!-- Messages -->
-    <string name="error_loading">Error al cargar datos</string>
-    <string name="success_save">Guardado exitosamente</string>
-    <string name="error_save">Error al guardar</string>
-    <string name="required_field">Campo requerido</string>
-    <string name="no_internet">Sin conexión a internet</string>
+    <string name="app_name">My Application</string>
+    <string name="title_home">Home</string>
+    <string name="title_dashboard">Dashboard</string>
+    <string name="title_notifications">Notifications</string>
 </resources>
