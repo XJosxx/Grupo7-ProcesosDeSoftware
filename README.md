@@ -284,4 +284,3 @@ Para cada método, revisa `MethodChannelHandler` y adáptalo según los nombres 
 
 ---
 
-Si quieres, genero ahora ejemplos de `Map`/JSON para los métodos de `MethodChannelHandler` (por ejemplo `agregarProducto`, `registrarVenta`, `validarStock`). Indica cuáles prefieres.
