@@ -1,6 +1,6 @@
 package com.example.myapplication.bridge
 
-import org.json.JSONObject
+import com.example.myapplication.util.json.JSONObject
 
 /**
  * Placeholder bridge para integraciones multiplataforma.
@@ -20,7 +20,10 @@ object FlutterBridge {
         err.put("message", "El bridge nativo fue removido. Implementa un nuevo bridge para integrar tu frontend.")
         err.put("requested_method", method)
         if (args != null) {
-            val jArgs = JSONObject(args)
+            val jArgs = JSONObject()
+            for ((k, v) in args) {
+                jArgs.put(k, v)
+            }
             err.put("args", jArgs)
         }
         return err.toString()

@@ -1,21 +1,17 @@
 package com.example.myapplication.repositories;
 
-import android.content.Context;
-import com.example.myapplication.data.DatabaseHelper;
-import com.example.myapplication.modelos.Usuario;
+import com.example.myapplication.entidades.Usuario;
+import java.util.List;
 
-public class UsuarioRepository {
-    private final DatabaseHelper db;
-
-    public UsuarioRepository(Context ctx) {
-        this.db = DatabaseHelper.getInstance(ctx);
-    }
-
-    public long crear(Usuario u) {
-        return db.insertarUsuario(u);
-    }
-
-    public Usuario buscarPorEmail(String email) {
-        return db.obtenerUsuarioPorEmail(email);
-    }
+/*
+    Interfaz del repositorio para la entidad Usuario
+    define los métodos CRUD para interactuar con la base de datos.
+*/
+public interface UsuarioRepository {
+    boolean save(Usuario usuario);
+    boolean update(Usuario usuario);
+    boolean delete(int id);
+    Usuario findById(int id);
+    Usuario findByUsername(String username);
+    List<Usuario> findAll();
 }

@@ -4,7 +4,6 @@ plugins {
 }
 
 android {
-    
     namespace = "com.example.myapplication"
     compileSdk = 36
 
@@ -40,10 +39,10 @@ android {
     buildFeatures {
         viewBinding = true
     }
+    
 }
 
 dependencies {
-
     // --- ANDROID BÁSICO ---
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -69,7 +68,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 
-    // --- GLIDE (imagenes) ---
+    // --- GLIDE (imágenes) ---
     implementation("com.github.bumptech.glide:glide:4.16.0")
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 
