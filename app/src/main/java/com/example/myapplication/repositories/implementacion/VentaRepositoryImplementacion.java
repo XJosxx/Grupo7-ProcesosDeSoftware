@@ -7,10 +7,6 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/*
-    Implementación del repositorio para la entidad Venta
-    se encarga de las operaciones CRUD en la base de datos.
-*/
 
 public class VentaRepositoryImplementacion implements VentaRepository {
 
@@ -29,17 +25,18 @@ public class VentaRepositoryImplementacion implements VentaRepository {
 
             int rows = stmt.executeUpdate();
             if (rows > 0) {
-                ResultSet rs = stmt.getGeneratedKeys();
-                if (rs.next()) {
-                    venta.setId(rs.getInt(1));
+                try (ResultSet rs = stmt.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        venta.setId(rs.getInt(1));
+                    }
                 }
                 return true;
             }
+            return false;
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al guardar la venta.", e);
         }
-        return false;
     }
 
     @Override
@@ -58,9 +55,8 @@ public class VentaRepositoryImplementacion implements VentaRepository {
             return stmt.executeUpdate() > 0;
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al actualizar la venta.", e);
         }
-        return false;
     }
 
     @Override
@@ -73,9 +69,8 @@ public class VentaRepositoryImplementacion implements VentaRepository {
             return stmt.executeUpdate() > 0;
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al eliminar la venta.", e);
         }
-        return false;
     }
 
     @Override
@@ -85,20 +80,22 @@ public class VentaRepositoryImplementacion implements VentaRepository {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, id);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                Venta v = new Venta();
-                v.setId(rs.getInt("idventa"));
-                v.setFecha(rs.getDate("fecha"));
-                v.setMonto(rs.getDouble("monto"));
-                v.setDescripcion(rs.getString("descripcion"));
-                v.setClienteDni(rs.getString("cliente_dni"));
-                v.setVendedorId(rs.getInt("vendedor_idvendedor"));
-                return v;
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Venta v = new Venta();
+                    v.setId(rs.getInt("idventa"));
+                    v.setFecha(rs.getDate("fecha"));
+                    v.setMonto(rs.getDouble("monto"));
+                    v.setDescripcion(rs.getString("descripcion"));
+                    v.setClienteDni(rs.getString("cliente_dni"));
+                    v.setVendedorId(rs.getInt("vendedor_idvendedor"));
+                    return v;
+                }
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al buscar venta por ID.", e);
         }
         return null;
     }
@@ -107,6 +104,7 @@ public class VentaRepositoryImplementacion implements VentaRepository {
     public List<Venta> findAll() {
         List<Venta> lista = new ArrayList<>();
         String sql = "SELECT * FROM venta";
+
         try (Connection conn = ConfiguracionBaseDatos.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
@@ -123,7 +121,7 @@ public class VentaRepositoryImplementacion implements VentaRepository {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al obtener todas las ventas.", e);
         }
         return lista;
     }
@@ -136,20 +134,22 @@ public class VentaRepositoryImplementacion implements VentaRepository {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, dniCliente);
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                Venta v = new Venta();
-                v.setId(rs.getInt("idventa"));
-                v.setFecha(rs.getDate("fecha"));
-                v.setMonto(rs.getDouble("monto"));
-                v.setDescripcion(rs.getString("descripcion"));
-                v.setClienteDni(rs.getString("cliente_dni"));
-                v.setVendedorId(rs.getInt("vendedor_idvendedor"));
-                lista.add(v);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Venta v = new Venta();
+                    v.setId(rs.getInt("idventa"));
+                    v.setFecha(rs.getDate("fecha"));
+                    v.setMonto(rs.getDouble("monto"));
+                    v.setDescripcion(rs.getString("descripcion"));
+                    v.setClienteDni(rs.getString("cliente_dni"));
+                    v.setVendedorId(rs.getInt("vendedor_idvendedor"));
+                    lista.add(v);
+                }
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al buscar ventas por DNI de cliente.", e);
         }
         return lista;
     }
@@ -161,6 +161,7 @@ public class VentaRepositoryImplementacion implements VentaRepository {
         try (Connection conn = ConfiguracionBaseDatos.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
+            // Manejo de valores nulos para los IDs
             if (idProductoSolicitado != null) {
                 stmt.setInt(1, idProductoSolicitado);
             } else {
@@ -178,7 +179,7 @@ public class VentaRepositoryImplementacion implements VentaRepository {
             stmt.executeUpdate();
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al registrar producto no encontrado en log.", e);
         }
     }
 }

@@ -1,65 +1,105 @@
 package com.example.myapplication.servicios.implementacion;
 
+import com.example.myapplication.Configuracion.ConfiguracionBaseDatos;
 import com.example.myapplication.entidades.Compra;
 import com.example.myapplication.entidades.DetalleCompra;
 import com.example.myapplication.entidades.Producto;
 import com.example.myapplication.repositories.CompraRepository;
 import com.example.myapplication.repositories.DetalleCompraRepository;
 import com.example.myapplication.repositories.ProductoRepository;
-import com.example.myapplication.repositories.implementacion.CompraRepositoryImplementacion;
-import com.example.myapplication.repositories.implementacion.DetalleCompraRepositoryImplementacion;
-import com.example.myapplication.repositories.implementacion.ProductoRepositoryImplementacion;
 import com.example.myapplication.servicios.ServicioCompra;
 import com.example.myapplication.servicios.ServicioProducto;
 
+import com.example.myapplication.repositories.implementacion.CompraRepositoryImplementacion;
+import com.example.myapplication.repositories.implementacion.DetalleCompraRepositoryImplementacion;
+import com.example.myapplication.repositories.implementacion.ProductoRepositoryImplementacion;
+import com.example.myapplication.servicios.implementacion.ServicioProductoImplementacion;
+
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
 
 public class ServicioCompraImplementacion implements ServicioCompra {
 
-    private CompraRepository compraRepo = new CompraRepositoryImplementacion();
-    private DetalleCompraRepository detalleCompraRepo = new DetalleCompraRepositoryImplementacion();
-    private ProductoRepository productoRepo = new ProductoRepositoryImplementacion();
-    private ServicioProducto servicioProducto = new ServicioProductoImplementacion();
+    // Dependencias inyectadas (solo interfaz)
+    private final CompraRepository compraRepo;
+    private final DetalleCompraRepository detalleCompraRepo;
+    private final ProductoRepository productoRepo;
+    private final ServicioProducto servicioProducto;
 
-    // Límites para validación de datos del producto
+    // Límites para validación de datos
     private static final double PRECIO_COMPRA_MINIMO = 0.01;
     private static final double PRECIO_COMPRA_MAXIMO = 100000.0;
     private static final int CANTIDAD_MINIMA = 1;
     private static final int CANTIDAD_MAXIMA = 10000;
 
+    /**
+     * Constructor para Inyección de Dependencias.
+     * Se usa para testing o frameworks avanzados.
+     */
+    public ServicioCompraImplementacion(
+            CompraRepository compraRepo,
+            DetalleCompraRepository detalleCompraRepo,
+            ProductoRepository productoRepo,
+            ServicioProducto servicioProducto) {
+        this.compraRepo = compraRepo;
+        this.detalleCompraRepo = detalleCompraRepo;
+        this.productoRepo = productoRepo;
+        this.servicioProducto = servicioProducto;
+    }
+
+    /**
+     * Constructor por defecto para compatibilidad.
+     * Crea instancias de las implementaciones.
+     */
+    public ServicioCompraImplementacion() {
+        this(new CompraRepositoryImplementacion(),
+                new DetalleCompraRepositoryImplementacion(),
+                new ProductoRepositoryImplementacion(),
+                new ServicioProductoImplementacion());
+    }
+
+
+    /**
+     * Implementación Transaccional
+     * Registra una compra, sus detalles y actualiza el stock. Requiere gestión transaccional externa.
+     */
     @Override
     public boolean registrarCompra(Compra compra, List<DetalleCompra> detalles) {
+
         try {
-            // Guardar compra
+            // 1. Guardar compra
             boolean compraGuardada = compraRepo.save(compra);
-            if (!compraGuardada) {
+            if (!compraGuardada || compra.getId() <= 0) {
+                System.err.println("Fallo al guardar la compra o al obtener el ID generado.");
                 return false;
             }
 
-            // Obtener el ID de la compra recién guardada
-            if (compra.getId() <= 0) {
-                return false;
-            }
-
-            // Guardar detalles
+            // 2. Guardar detalles
             for (DetalleCompra detalle : detalles) {
                 detalle.setCompraId(compra.getId());
 
-                // Guardar detalle
                 boolean detalleOk = detalleCompraRepo.save(detalle);
-                if (!detalleOk) return false;
+                if (!detalleOk) {
+                    throw new RuntimeException("Fallo al guardar el detalle de compra. Se requiere Rollback manual.");
+                }
             }
 
-            // Actualizar stock de productos - NUEVA LÓGICA EXTRACTADA
+            // 3. Actualizar stock de productos
             boolean stockActualizado = actualizarStockPorCompra(detalles);
             if (!stockActualizado) {
-                System.err.println("Error al actualizar stock de productos");
-                return false;
+                throw new RuntimeException("Fallo al actualizar el stock del producto. Se requiere Rollback manual.");
             }
 
             return true;
+
+        } catch (RuntimeException e) {
+            System.err.println(" ERROR TRANSACCIONAL en registrarCompra. Se requiere Rollback: " + e.getMessage());
+            e.printStackTrace();
+            return false;
         } catch (Exception e) {
+            System.err.println("Error inesperado en registrarCompra: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -67,29 +107,25 @@ public class ServicioCompraImplementacion implements ServicioCompra {
 
     /**
      * Método para actualizar el stock de productos basado en los detalles de compra
-     * Itera los detalles, suma la cantidad al stock de cada producto y persiste los cambios
-     * @param detalles Lista de detalles de compra
-     * @return true si se actualizó correctamente, false si hubo error
      */
     public boolean actualizarStockPorCompra(List<DetalleCompra> detalles) {
         try {
             System.out.println("Iniciando actualización de stock para " + detalles.size() + " productos...");
 
             for (DetalleCompra detalle : detalles) {
-                // Obtener el producto desde la base de datos
                 Producto producto = productoRepo.findById(detalle.getProductoId());
+
                 if (producto == null) {
                     System.err.println("Producto no encontrado con ID: " + detalle.getProductoId());
-                    return false;
+                    throw new RuntimeException("Producto no encontrado con ID: " + detalle.getProductoId());
                 }
 
-                // Verificar que el producto no sea temporal (ID negativo)
                 if (producto.getId() < 0) {
                     System.out.println("Producto con ID temporal " + producto.getId() + " - omitiendo actualización de stock");
                     continue;
                 }
 
-                // Calcular nuevo stock: stock actual + cantidad comprada
+
                 int stockActual = producto.getCantidad();
                 int nuevoStock = stockActual + detalle.getUnidades();
 
@@ -98,14 +134,11 @@ public class ServicioCompraImplementacion implements ServicioCompra {
                         " + Unidades compradas: " + detalle.getUnidades() +
                         " = Nuevo stock: " + nuevoStock);
 
-                // Actualizar el stock del producto
                 producto.setCantidad(nuevoStock);
 
-                // Persistir cambios en la base de datos
                 boolean actualizado = productoRepo.update(producto);
                 if (!actualizado) {
-                    System.err.println("Error al actualizar stock del producto ID: " + producto.getId());
-                    return false;
+                    throw new RuntimeException("Error al actualizar stock del producto ID: " + producto.getId() + " (0 filas afectadas)");
                 }
 
                 System.out.println("Stock actualizado correctamente para producto: " + producto.getNombre());
@@ -114,147 +147,114 @@ public class ServicioCompraImplementacion implements ServicioCompra {
             System.out.println("Actualización de stock completada exitosamente");
             return true;
 
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
-            System.err.println("Error en actualizarStockPorCompra: " + e.getMessage());
+            System.err.println("Error inesperado en actualizarStockPorCompra: " + e.getMessage());
             e.printStackTrace();
-            return false;
+            throw new RuntimeException("Error inesperado durante la actualización de stock.", e);
         }
     }
 
     @Override
     public DetalleCompra agregarProductoExistenteACompra(int productoId, int cantidad) {
         try {
-            // 1. Validar que el producto existe
             Producto producto = servicioProducto.obtenerPorId(productoId);
             if (producto == null) {
                 throw new RuntimeException("Producto no encontrado con ID: " + productoId);
             }
 
-            // 2. Validar cantidad
             if (cantidad < CANTIDAD_MINIMA) {
                 throw new RuntimeException("La cantidad debe ser al menos " + CANTIDAD_MINIMA);
             }
-
             if (cantidad > CANTIDAD_MAXIMA) {
                 throw new RuntimeException("La cantidad no puede exceder " + CANTIDAD_MAXIMA);
             }
 
-            // 3. Obtener el precio de compra del producto
             double precioCompra = producto.getPrecioCompra();
-
-            // 4. Validar que el precio de compra sea válido
             if (precioCompra < PRECIO_COMPRA_MINIMO) {
                 throw new RuntimeException("El precio de compra del producto no es válido: " + precioCompra);
             }
 
-            // 5. Crear el detalle de compra con los datos automáticos
             DetalleCompra detalle = new DetalleCompra();
             detalle.setProductoId(productoId);
             detalle.setUnidades(cantidad);
             detalle.setPrecioUnitario(precioCompra);
 
             System.out.println("Producto agregado a compra: " + producto.getNombre());
-            System.out.println("Precio de compra automático: " + precioCompra);
-            System.out.println("Cantidad: " + cantidad);
 
             return detalle;
 
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Error al agregar producto existente a compra: " + e.getMessage());
+            throw new RuntimeException("Error al agregar producto existente a compra: " + e.getMessage(), e);
         }
     }
 
     @Override
     public List<Compra> listarCompras() {
-        return compraRepo.findAll();
+        try {
+            return compraRepo.findAll();
+        } catch (RuntimeException e) {
+            throw e;
+        }
     }
 
     @Override
     public DetalleCompra agregarProductoNuevoACompra(DetalleCompra detalle) {
         try {
-            // 1. Validar datos básicos del detalle
             if (!validarDetalleCompra(detalle)) {
-                throw new RuntimeException("Datos del producto inválidos");
+                throw new RuntimeException("Datos del producto inválidos.");
             }
 
-            // 2. Si el producto no tiene ID (es nuevo), generar uno temporal
             if (detalle.getProductoId() <= 0) {
-                // Para productos nuevos, usar un ID temporal negativo
-                // Esto indica que es un producto que aún no existe en la base de datos
                 detalle.setProductoId(generarIdTemporal());
             }
 
-            // 3. Retornar el detalle validado y listo para agregar a la compra
             return detalle;
 
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Error al agregar producto a compra: " + e.getMessage());
+            throw new RuntimeException("Error al agregar producto nuevo a compra: " + e.getMessage(), e);
         }
     }
 
     @Override
     public boolean validarDatosProductoNuevo(String codigo, int cantidad, double precioCompra) {
-        // 1. Validar código (no vacío y longitud razonable)
-        if (codigo == null || codigo.trim().isEmpty()) {
-            System.out.println("El código del producto no puede estar vacío");
+
+        if (codigo == null || codigo.trim().isEmpty() || codigo.trim().length() > 50) {
+            System.err.println("El código del producto es inválido o demasiado largo.");
             return false;
         }
 
-        if (codigo.trim().length() > 50) {
-            System.out.println("El código del producto es demasiado largo");
+        if (cantidad < CANTIDAD_MINIMA || cantidad > CANTIDAD_MAXIMA) {
+            System.err.println("La cantidad está fuera del rango permitido.");
             return false;
         }
 
-        // 2. Validar cantidad
-        if (cantidad < CANTIDAD_MINIMA) {
-            System.out.println("La cantidad debe ser al menos " + CANTIDAD_MINIMA);
-            return false;
-        }
-
-        if (cantidad > CANTIDAD_MAXIMA) {
-            System.out.println("La cantidad no puede exceder " + CANTIDAD_MAXIMA);
-            return false;
-        }
-
-        // 3. Validar precio de compra
-        if (precioCompra < PRECIO_COMPRA_MINIMO) {
-            System.out.println("El precio de compra debe ser mayor a " + PRECIO_COMPRA_MINIMO);
-            return false;
-        }
-
-        if (precioCompra > PRECIO_COMPRA_MAXIMO) {
-            System.out.println("El precio de compra no puede exceder " + PRECIO_COMPRA_MAXIMO);
+        if (precioCompra < PRECIO_COMPRA_MINIMO || precioCompra > PRECIO_COMPRA_MAXIMO) {
+            System.err.println("El precio de compra está fuera del rango permitido.");
             return false;
         }
 
         return true;
     }
 
-    /**
-     * Valida los datos básicos de un DetalleCompra
-     */
     private boolean validarDetalleCompra(DetalleCompra detalle) {
         if (detalle == null) {
-            System.out.println("El detalle de compra no puede ser nulo");
+            System.err.println("El detalle de compra no puede ser nulo");
             return false;
         }
 
-        // Validar unidades
-        if (detalle.getUnidades() < CANTIDAD_MINIMA) {
-            System.out.println("Las unidades deben ser al menos " + CANTIDAD_MINIMA);
+        if (detalle.getUnidades() < CANTIDAD_MINIMA || detalle.getUnidades() > CANTIDAD_MAXIMA) {
+            System.err.println("Las unidades están fuera del rango permitido.");
             return false;
         }
 
-        if (detalle.getUnidades() > CANTIDAD_MAXIMA) {
-            System.out.println("Las unidades no pueden exceder " + CANTIDAD_MAXIMA);
-            return false;
-        }
-
-        // Validar que tenga al menos un identificador (productoId)
         if (detalle.getProductoId() == 0) {
-            System.out.println("El producto debe tener un identificador válido");
+            System.err.println("El producto debe tener un identificador válido (positivo o temporal negativo)");
             return false;
         }
 
@@ -262,39 +262,36 @@ public class ServicioCompraImplementacion implements ServicioCompra {
     }
 
     /**
-     * Genera un ID temporal para productos nuevos
-     * Los IDs temporales son negativos para diferenciarlos de los reales
+     * Genera un ID temporal negativo.
      */
     private int generarIdTemporal() {
-        return -Math.abs(UUID.randomUUID().hashCode() % 1000000);
+        return -Math.abs(UUID.randomUUID().hashCode());
     }
 
     @Override
     public boolean eliminarDetalleCompra(int detalleId) {
         try {
-            // 1. Validar que el detalle existe
             DetalleCompra detalle = detalleCompraRepo.findById(detalleId);
             if (detalle == null) {
                 System.out.println("Detalle de compra no encontrado con ID: " + detalleId);
                 return false;
             }
 
-            System.out.println("Eliminando detalle de compra ID: " + detalleId +
-                    " de la compra ID: " + detalle.getCompraId());
-
-            // 2. Eliminar el detalle usando el repository
             boolean eliminado = detalleCompraRepo.delete(detalleId);
 
             if (eliminado) {
                 System.out.println("Detalle de compra eliminado exitosamente");
             } else {
-                System.out.println("Error al eliminar detalle de compra");
+                System.out.println("Error al eliminar detalle de compra (0 filas afectadas)");
             }
 
             return eliminado;
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             System.err.println("Error en eliminarDetalleCompra: " + e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            System.err.println("Error inesperado en eliminarDetalleCompra: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -302,160 +299,112 @@ public class ServicioCompraImplementacion implements ServicioCompra {
 
     public boolean editarDetalleCompra(int detalleId, int cantidad, double precio) {
         try {
-            // 1. Validar que el detalle existe
             DetalleCompra detalle = detalleCompraRepo.findById(detalleId);
             if (detalle == null) {
                 System.out.println("Detalle de compra no encontrado con ID: " + detalleId);
                 return false;
             }
 
-            // 2. Validar cantidad
-            if (cantidad < CANTIDAD_MINIMA) {
-                System.out.println("La cantidad debe ser al menos " + CANTIDAD_MINIMA);
+            if (cantidad < CANTIDAD_MINIMA || cantidad > CANTIDAD_MAXIMA) {
+                System.err.println("Cantidad fuera de rango.");
+                return false;
+            }
+            if (precio < PRECIO_COMPRA_MINIMO || precio > PRECIO_COMPRA_MAXIMO) {
+                System.err.println("Precio fuera de rango.");
                 return false;
             }
 
-            if (cantidad > CANTIDAD_MAXIMA) {
-                System.out.println("La cantidad no puede exceder " + CANTIDAD_MAXIMA);
-                return false;
-            }
-
-            // 3. Validar precio
-            if (precio < PRECIO_COMPRA_MINIMO) {
-                System.out.println("El precio debe ser mayor a " + PRECIO_COMPRA_MINIMO);
-                return false;
-            }
-
-            if (precio > PRECIO_COMPRA_MAXIMO) {
-                System.out.println("El precio no puede exceder " + PRECIO_COMPRA_MAXIMO);
-                return false;
-            }
-
-            // 4. Verificar si hubo cambios reales
             boolean cambios = false;
             if (detalle.getUnidades() != cantidad) {
-                System.out.println("Actualizando cantidad: " + detalle.getUnidades() + " → " + cantidad);
                 detalle.setUnidades(cantidad);
                 cambios = true;
             }
 
             if (detalle.getPrecioUnitario() != precio) {
-                System.out.println("Actualizando precio: " + detalle.getPrecioUnitario() + " → " + precio);
                 detalle.setPrecioUnitario(precio);
                 cambios = true;
             }
 
             if (!cambios) {
-                System.out.println("No hay cambios para aplicar al detalle ID: " + detalleId);
-                return true; // No hay cambios, pero no es un error
+                return true;
             }
 
-            // 5. Actualizar el detalle en la base de datos
             boolean actualizado = detalleCompraRepo.update(detalle);
 
-            if (actualizado) {
-                System.out.println("Detalle de compra actualizado exitosamente");
-                System.out.println("   - ID: " + detalleId);
-                System.out.println("   - Cantidad: " + cantidad);
-                System.out.println("   - Precio unitario: " + precio);
-            } else {
-                System.out.println("Error al actualizar detalle de compra");
+            if (!actualizado) {
+                throw new RuntimeException("Fallo al actualizar detalle de compra (0 filas afectadas).");
             }
 
-            return actualizado;
+            return true;
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             System.err.println("Error en editarDetalleCompra: " + e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            System.err.println("Error inesperado en editarDetalleCompra: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
     }
 
+    /**
+     *  Implementación Transaccional
+     */
     @Override
     public boolean eliminarCompra(int compraId) {
         try {
-            // 1. Validar que la compra existe
             Compra compra = compraRepo.findById(compraId);
             if (compra == null) {
                 System.out.println("Compra no encontrada con ID: " + compraId);
                 return false;
             }
 
-            System.out.println("Eliminando compra ID: " + compraId + " - Descripción: " + compra.getDescripcion());
-
-            // 2. Obtener todos los detalles de la compra
             List<DetalleCompra> detalles = detalleCompraRepo.findByCompraId(compraId);
-            System.out.println("Encontrados " + detalles.size() + " detalles para la compra ID: " + compraId);
 
-            // 3. Revertir el stock de los productos (restar lo que se había sumado en la compra)
+            // 3. Revertir el stock de los productos
             for (DetalleCompra detalle : detalles) {
                 Producto producto = productoRepo.findById(detalle.getProductoId());
                 if (producto != null) {
-                    // Validar que el producto no sea temporal (ID negativo)
-                    if (producto.getId() < 0) {
-                        System.out.println("Producto temporal ID: " + producto.getId() + " - omitiendo reversión de stock");
-                        continue;
-                    }
+                    if (producto.getId() < 0) continue;
 
-                    int stockActual = producto.getCantidad();
-                    int nuevoStock = stockActual - detalle.getUnidades(); // RESTAMOS lo que se había sumado
+                    int nuevoStock = producto.getCantidad() - detalle.getUnidades();
 
-                    // Validar que no quede stock negativo
                     if (nuevoStock < 0) {
-                        System.err.println("Advertencia: Stock negativo para producto ID: " + producto.getId() +
-                                " - Stock resultante: " + nuevoStock);
-                        // Podemos continuar o detener según tu política de negocio
+                        System.err.println("Advertencia: Stock negativo para producto ID: " + producto.getId());
                     }
-
-                    System.out.println("Revirtiendo stock producto ID: " + producto.getId() +
-                            " - Stock actual: " + stockActual +
-                            " - Unidades compradas: " + detalle.getUnidades() +
-                            " = Nuevo stock: " + nuevoStock);
 
                     producto.setCantidad(nuevoStock);
-                    boolean stockActualizado = productoRepo.update(producto);
-
-                    if (!stockActualizado) {
-                        System.err.println("Error al revertir stock del producto ID: " + producto.getId());
-                        return false;
+                    if (!productoRepo.update(producto)) {
+                        throw new RuntimeException("Fallo al revertir stock para producto ID: " + producto.getId());
                     }
                 } else {
-                    System.err.println("Producto no encontrado ID: " + detalle.getProductoId() + " - continuando...");
+                    System.err.println("Producto no encontrado ID: " + detalle.getProductoId() + " al revertir stock.");
                 }
             }
 
-            // 4. Eliminar los detalles de compra primero (por integridad referencial)
+            // 4. Eliminar los detalles de compra primero
             for (DetalleCompra detalle : detalles) {
-                boolean detalleEliminado = detalleCompraRepo.delete(detalle.getId());
-                if (!detalleEliminado) {
+                if (!detalleCompraRepo.delete(detalle.getId())) {
                     System.err.println("Error al eliminar detalle ID: " + detalle.getId());
-                    // Continuamos aunque falle uno, para intentar limpiar lo máximo posible
                 }
             }
 
             // 5. Finalmente eliminar la compra
             boolean compraEliminada = compraRepo.delete(compraId);
 
-            if (compraEliminada) {
-                System.out.println(" Compra eliminada exitosamente:");
-                System.out.println("   - ID: " + compraId);
-                System.out.println("   - Descripción: " + compra.getDescripcion());
-                System.out.println("   - Monto: " + compra.getMonto());
-                System.out.println("   - Stock revertido para " + detalles.size() + " productos");
-            } else {
-                System.err.println(" Error al eliminar la compra de la base de datos");
+            if (!compraEliminada) {
+                throw new RuntimeException("Error al eliminar la compra ID: " + compraId + " (0 filas afectadas).");
             }
 
-            return compraEliminada;
+            return true;
 
+        } catch (RuntimeException e) {
+            System.err.println("ERROR TRANSACCIONAL en eliminarCompra: " + e.getMessage());
+            throw e;
         } catch (Exception e) {
-            System.err.println("Error en eliminarCompra: " + e.getMessage());
+            System.err.println("Error inesperado en eliminarCompra: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
     }
-
-
-
-
 }

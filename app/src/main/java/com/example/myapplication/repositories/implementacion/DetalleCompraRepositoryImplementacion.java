@@ -9,6 +9,7 @@ import java.util.List;
 
 public class DetalleCompraRepositoryImplementacion implements DetalleCompraRepository {
 
+
     @Override
     public boolean save(DetalleCompra detalle) {
 
@@ -24,9 +25,8 @@ public class DetalleCompraRepositoryImplementacion implements DetalleCompraRepos
             return stmt.executeUpdate() > 0;
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al guardar el detalle de la compra.", e);
         }
-        return false;
     }
 
     @Override
@@ -45,9 +45,8 @@ public class DetalleCompraRepositoryImplementacion implements DetalleCompraRepos
             return stmt.executeUpdate() > 0;
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al actualizar el detalle de la compra.", e);
         }
-        return false;
     }
 
     @Override
@@ -61,9 +60,8 @@ public class DetalleCompraRepositoryImplementacion implements DetalleCompraRepos
             return stmt.executeUpdate() > 0;
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al eliminar el detalle de la compra.", e);
         }
-        return false;
     }
 
     @Override
@@ -74,19 +72,21 @@ public class DetalleCompraRepositoryImplementacion implements DetalleCompraRepos
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, id);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                DetalleCompra d = new DetalleCompra();
-                d.setId(rs.getInt("iddetalle_compra"));
-                d.setUnidades(rs.getInt("unidades"));
-                d.setProductoId(rs.getInt("producto_idproducto"));
-                d.setCompraId(rs.getInt("compra_idcompra"));
-                d.setPrecioUnitario(rs.getDouble("precio_unitario"));
-                return d;
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    DetalleCompra d = new DetalleCompra();
+                    d.setId(rs.getInt("iddetalle_compra"));
+                    d.setUnidades(rs.getInt("unidades"));
+                    d.setProductoId(rs.getInt("producto_idproducto"));
+                    d.setCompraId(rs.getInt("compra_idcompra"));
+                    d.setPrecioUnitario(rs.getDouble("precio_unitario"));
+                    return d;
+                }
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al buscar detalle por ID.", e);
         }
         return null;
     }
@@ -99,19 +99,21 @@ public class DetalleCompraRepositoryImplementacion implements DetalleCompraRepos
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, compraId);
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                DetalleCompra d = new DetalleCompra();
-                d.setId(rs.getInt("iddetalle_compra"));
-                d.setUnidades(rs.getInt("unidades"));
-                d.setProductoId(rs.getInt("producto_idproducto"));
-                d.setCompraId(rs.getInt("compra_idcompra"));
-                d.setPrecioUnitario(rs.getDouble("precio_unitario"));
-                lista.add(d);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    DetalleCompra d = new DetalleCompra();
+                    d.setId(rs.getInt("iddetalle_compra"));
+                    d.setUnidades(rs.getInt("unidades"));
+                    d.setProductoId(rs.getInt("producto_idproducto"));
+                    d.setCompraId(rs.getInt("compra_idcompra"));
+                    d.setPrecioUnitario(rs.getDouble("precio_unitario"));
+                    lista.add(d);
+                }
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al buscar detalles por ID de compra.", e);
         }
         return lista;
     }
@@ -121,6 +123,7 @@ public class DetalleCompraRepositoryImplementacion implements DetalleCompraRepos
 
         List<DetalleCompra> lista = new ArrayList<>();
         String sql = "SELECT * FROM `detalle-compra`";
+
         try (Connection conn = ConfiguracionBaseDatos.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
@@ -136,7 +139,7 @@ public class DetalleCompraRepositoryImplementacion implements DetalleCompraRepos
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al obtener todos los detalles de compra.", e);
         }
         return lista;
     }

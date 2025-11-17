@@ -9,6 +9,8 @@ import java.util.List;
 
 public class ClienteRepositoryImplementacion implements ClienteRepository {
 
+
+
     @Override
     public boolean save(Cliente cliente) {
         String sql = "INSERT INTO cliente (nombre, dni) VALUES (?, ?)";
@@ -21,9 +23,8 @@ public class ClienteRepositoryImplementacion implements ClienteRepository {
             return stmt.executeUpdate() > 0;
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al guardar el cliente.", e);
         }
-        return false;
     }
 
     @Override
@@ -38,9 +39,8 @@ public class ClienteRepositoryImplementacion implements ClienteRepository {
             return stmt.executeUpdate() > 0;
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al actualizar el cliente.", e);
         }
-        return false;
     }
 
     @Override
@@ -53,28 +53,29 @@ public class ClienteRepositoryImplementacion implements ClienteRepository {
             return stmt.executeUpdate() > 0;
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al eliminar el cliente.", e);
         }
-        return false;
     }
 
     @Override
     public Cliente findByDni(String dni) {
-        String sql = "SELECT * FROM cliente WHERE dni=?";
+        String sql = "SELECT nombre, dni FROM cliente WHERE dni=?";
         try (Connection conn = ConfiguracionBaseDatos.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, dni);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                Cliente cliente = new Cliente();
-                cliente.setNombre(rs.getString("nombre"));
-                cliente.setDni(rs.getString("dni"));
-                return cliente;
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Cliente cliente = new Cliente();
+                    cliente.setNombre(rs.getString("nombre"));
+                    cliente.setDni(rs.getString("dni"));
+                    return cliente;
+                }
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al buscar cliente por DNI.", e);
         }
         return null;
     }
@@ -82,10 +83,11 @@ public class ClienteRepositoryImplementacion implements ClienteRepository {
     @Override
     public List<Cliente> findAll() {
         List<Cliente> lista = new ArrayList<>();
-        String sql = "SELECT * FROM cliente";
+        String sql = "SELECT nombre, dni FROM cliente";
+
         try (Connection conn = ConfiguracionBaseDatos.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+             ResultSet rs = stmt.executeQuery()) { // rs incluido aquí
 
             while (rs.next()) {
                 Cliente cliente = new Cliente();
@@ -95,47 +97,53 @@ public class ClienteRepositoryImplementacion implements ClienteRepository {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al obtener todos los clientes.", e);
         }
         return lista;
     }
 
-    // buscar clientes por nombre
+    @Override
     public List<Cliente> findByNombre(String nombre) {
         List<Cliente> lista = new ArrayList<>();
-        String sql = "SELECT * FROM cliente WHERE nombre LIKE ?";
+        String sql = "SELECT nombre, dni FROM cliente WHERE nombre LIKE ?";
+
         try (Connection conn = ConfiguracionBaseDatos.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, "%" + nombre + "%");
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                Cliente cliente = new Cliente();
-                cliente.setNombre(rs.getString("nombre"));
-                cliente.setDni(rs.getString("dni"));
-                lista.add(cliente);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Cliente cliente = new Cliente();
+                    cliente.setNombre(rs.getString("nombre"));
+                    cliente.setDni(rs.getString("dni"));
+                    lista.add(cliente);
+                }
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al buscar clientes por nombre.", e);
         }
         return lista;
     }
 
-    // verificar si un cliente existe por DNI
+    @Override
     public boolean existePorDni(String dni) {
-        String sql = "SELECT COUNT(*) FROM cliente WHERE dni=?";
+        String sql = "SELECT COUNT(dni) FROM cliente WHERE dni=?";
+
         try (Connection conn = ConfiguracionBaseDatos.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, dni);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return rs.getInt(1) > 0;
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al verificar existencia por DNI.", e);
         }
         return false;
     }

@@ -76,10 +76,8 @@ public class ServicioVentaImplementacion implements ServicioVenta {
             MontosCalculados montosVenta = calcularMontosVentaCompleta(detalles);
             venta.setMonto(montosVenta.getTotalConIGV());
 
-            // ⭐⭐ CORRECCIÓN: Obtener próximo ID ANTES de guardar ⭐⭐
             int proximoId = obtenerProximoIdVenta();
 
-            // ⭐⭐ CORRECCIÓN: Generar número de boleta REAL (no temporal) ⭐⭐
             String numeroBoletaReal = generarNumeroBoleta(proximoId);
             venta.setNumeroBoleta(numeroBoletaReal);
 
@@ -115,7 +113,6 @@ public class ServicioVentaImplementacion implements ServicioVenta {
                 productoRepo.update(producto);
             }
 
-            // ⭐⭐ CORRECCIÓN: Ya no necesitamos generarBoleta aquí, solo retornar el ID ⭐⭐
             System.out.println("✅ Venta registrada exitosamente - Boleta: " + numeroBoletaReal);
             return ventaConId.getId();
 
@@ -416,7 +413,7 @@ public class ServicioVentaImplementacion implements ServicioVenta {
 
             List<Venta> ventas = ventaRepo.findAll();
 
-            System.out.println("✅ Se obtuvieron " + ventas.size() + " ventas");
+            System.out.println("Se obtuvieron " + ventas.size() + " ventas");
             return ventas;
 
         } catch (Exception e) {

@@ -7,36 +7,39 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/*
-    Implementación del repositorio para la entidad Compra
-    se encarga de las operaciones CRUD en la base de datos.
-*/
-
-
+/**
+ * Implementación del repositorio para la entidad Compra.
+ * Se encarga de las operaciones CRUD en la base de datos.
+ * Utiliza un pool de conexiones y propaga errores de BD como RuntimeException.
+ */
 public class CompraRepositoryImplementacion implements CompraRepository {
 
     @Override
     public boolean save(Compra compra) {
         String sql = "INSERT INTO compra (descripcion, monto) VALUES (?, ?)";
         try (Connection conn = ConfiguracionBaseDatos.getConnection();
+             // Solicitamos que se devuelvan las claves generadas
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             stmt.setString(1, compra.getDescripcion());
             stmt.setDouble(2, compra.getMonto());
 
             int rows = stmt.executeUpdate();
+
             if (rows > 0) {
-                ResultSet rs = stmt.getGeneratedKeys();
-                if (rs.next()) {
-                    compra.setId(rs.getInt(1));
+                try (ResultSet rs = stmt.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        // Asignamos el ID generado al objeto Compra
+                        compra.setId(rs.getInt(1));
+                    }
                 }
                 return true;
             }
+            return false;
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de base de datos al guardar la compra.", e);
         }
-        return false;
     }
 
     @Override
@@ -52,9 +55,8 @@ public class CompraRepositoryImplementacion implements CompraRepository {
             return stmt.executeUpdate() > 0;
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de base de datos al actualizar la compra.", e);
         }
-        return false;
     }
 
     @Override
@@ -67,29 +69,30 @@ public class CompraRepositoryImplementacion implements CompraRepository {
             return stmt.executeUpdate() > 0;
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de base de datos al eliminar la compra.", e);
         }
-        return false;
     }
 
     @Override
     public Compra findById(int id) {
-        String sql = "SELECT * FROM compra WHERE idcompra=?";
+        String sql = "SELECT idcompra, descripcion, monto FROM compra WHERE idcompra=?";
         try (Connection conn = ConfiguracionBaseDatos.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, id);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                Compra c = new Compra();
-                c.setId(rs.getInt("idcompra"));
-                c.setDescripcion(rs.getString("descripcion"));
-                c.setMonto(rs.getDouble("monto"));
-                return c;
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Compra c = new Compra();
+                    c.setId(rs.getInt("idcompra"));
+                    c.setDescripcion(rs.getString("descripcion"));
+                    c.setMonto(rs.getDouble("monto"));
+                    return c;
+                }
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de base de datos al buscar la compra por ID.", e);
         }
         return null;
     }
@@ -97,7 +100,8 @@ public class CompraRepositoryImplementacion implements CompraRepository {
     @Override
     public List<Compra> findAll() {
         List<Compra> lista = new ArrayList<>();
-        String sql = "SELECT * FROM compra";
+        String sql = "SELECT idcompra, descripcion, monto FROM compra";
+
         try (Connection conn = ConfiguracionBaseDatos.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
@@ -111,7 +115,7 @@ public class CompraRepositoryImplementacion implements CompraRepository {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de base de datos al obtener todas las compras.", e);
         }
         return lista;
     }

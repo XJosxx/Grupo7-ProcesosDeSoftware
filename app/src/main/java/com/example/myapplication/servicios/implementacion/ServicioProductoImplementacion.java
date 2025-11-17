@@ -58,7 +58,6 @@ public class ServicioProductoImplementacion implements ServicioProducto {
         }
     }
 
-    // AGREGA ESTE MÉTODO MEJORADO a tu clase existente
     @Override
     public boolean agregarProducto(Producto producto) {
         try {
@@ -108,7 +107,7 @@ public class ServicioProductoImplementacion implements ServicioProducto {
             }
 
             // 6. Validar que no exista un producto con el mismo nombre (opcional)
-            // Esto es opcional - depende si quieres nombres únicos
+
             List<Producto> productosMismoNombre = repo.findByNombre(producto.getNombre().trim());
             if (productosMismoNombre != null && !productosMismoNombre.isEmpty()) {
                 System.out.println("Ya existe un producto con el nombre: " + producto.getNombre());

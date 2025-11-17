@@ -21,17 +21,18 @@ public class UsuarioRepositoryImplementacion implements UsuarioRepository {
 
             int rows = stmt.executeUpdate();
             if (rows > 0) {
-                ResultSet rs = stmt.getGeneratedKeys();
-                if (rs.next()) {
-                    usuario.setId(rs.getInt(1));
+                try (ResultSet rs = stmt.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        usuario.setId(rs.getInt(1));
+                    }
                 }
                 return true;
             }
+            return false;
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al guardar el usuario (vendedor).", e);
         }
-        return false;
     }
 
     @Override
@@ -48,9 +49,8 @@ public class UsuarioRepositoryImplementacion implements UsuarioRepository {
             return stmt.executeUpdate() > 0;
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al actualizar el usuario (vendedor).", e);
         }
-        return false;
     }
 
     @Override
@@ -63,53 +63,56 @@ public class UsuarioRepositoryImplementacion implements UsuarioRepository {
             return stmt.executeUpdate() > 0;
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al eliminar el usuario (vendedor).", e);
         }
-        return false;
     }
 
     @Override
     public Usuario findById(int id) {
-        String sql = "SELECT * FROM vendedor WHERE idvendedor=?";
+        String sql = "SELECT idvendedor, nombre, rol, password FROM vendedor WHERE idvendedor=?";
         try (Connection conn = ConfiguracionBaseDatos.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, id);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                Usuario u = new Usuario();
-                u.setId(rs.getInt("idvendedor"));
-                u.setNombre(rs.getString("nombre"));
-                u.setRol(rs.getString("rol"));
-                u.setPassword(rs.getString("password"));
-                return u;
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Usuario u = new Usuario();
+                    u.setId(rs.getInt("idvendedor"));
+                    u.setNombre(rs.getString("nombre"));
+                    u.setRol(rs.getString("rol"));
+                    u.setPassword(rs.getString("password"));
+                    return u;
+                }
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al buscar usuario por ID.", e);
         }
         return null;
     }
 
     @Override
     public Usuario findByUsername(String username) {
-        String sql = "SELECT * FROM vendedor WHERE nombre=?"; // Mantenemos la consulta por "nombre" en la BD
+        String sql = "SELECT idvendedor, nombre, rol, password FROM vendedor WHERE nombre=?";
         try (Connection conn = ConfiguracionBaseDatos.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setString(1, username); // Buscamos por el username que viene como parámetro
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                Usuario u = new Usuario();
-                u.setId(rs.getInt("idvendedor"));
-                u.setNombre(rs.getString("nombre"));
-                u.setRol(rs.getString("rol"));
-                u.setPassword(rs.getString("password"));
-                return u;
+            stmt.setString(1, username);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Usuario u = new Usuario();
+                    u.setId(rs.getInt("idvendedor"));
+                    u.setNombre(rs.getString("nombre"));
+                    u.setRol(rs.getString("rol"));
+                    u.setPassword(rs.getString("password"));
+                    return u;
+                }
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al buscar usuario por nombre.", e);
         }
         return null;
     }
@@ -117,7 +120,8 @@ public class UsuarioRepositoryImplementacion implements UsuarioRepository {
     @Override
     public List<Usuario> findAll() {
         List<Usuario> lista = new ArrayList<>();
-        String sql = "SELECT * FROM vendedor";
+        String sql = "SELECT idvendedor, nombre, rol, password FROM vendedor";
+
         try (Connection conn = ConfiguracionBaseDatos.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
@@ -132,7 +136,7 @@ public class UsuarioRepositoryImplementacion implements UsuarioRepository {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al obtener todos los usuarios.", e);
         }
         return lista;
     }

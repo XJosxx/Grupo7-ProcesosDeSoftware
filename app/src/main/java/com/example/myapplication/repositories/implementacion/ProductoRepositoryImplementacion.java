@@ -17,6 +17,7 @@ public class ProductoRepositoryImplementacion implements ProductoRepository {
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             stmt.setString(1, producto.getNombre());
+            // Conversión de java.util.Date a java.sql.Date
             stmt.setDate(2, new java.sql.Date(producto.getFechaIngreso().getTime()));
             stmt.setDouble(3, producto.getPrecioCompra());
             stmt.setDouble(4, producto.getPrecioVenta());
@@ -25,17 +26,18 @@ public class ProductoRepositoryImplementacion implements ProductoRepository {
 
             int rows = stmt.executeUpdate();
             if (rows > 0) {
-                ResultSet rs = stmt.getGeneratedKeys();
-                if (rs.next()) {
-                    producto.setId(rs.getInt(1));
+                try (ResultSet rs = stmt.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        producto.setId(rs.getInt(1));
+                    }
                 }
                 return true;
             }
+            return false;
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al guardar el producto.", e);
         }
-        return false;
     }
 
     @Override
@@ -56,9 +58,8 @@ public class ProductoRepositoryImplementacion implements ProductoRepository {
             return stmt.executeUpdate() > 0;
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al actualizar el producto.", e);
         }
-        return false;
     }
 
     @Override
@@ -72,9 +73,8 @@ public class ProductoRepositoryImplementacion implements ProductoRepository {
             return stmt.executeUpdate() > 0;
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al eliminar el producto.", e);
         }
-        return false;
     }
 
     @Override
@@ -85,13 +85,15 @@ public class ProductoRepositoryImplementacion implements ProductoRepository {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, id);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return mapearProducto(rs);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapearProducto(rs);
+                }
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al buscar producto por ID.", e);
         }
         return null;
     }
@@ -101,6 +103,7 @@ public class ProductoRepositoryImplementacion implements ProductoRepository {
 
         List<Producto> lista = new ArrayList<>();
         String sql = "SELECT * FROM producto";
+
         try (Connection conn = ConfiguracionBaseDatos.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
@@ -110,7 +113,7 @@ public class ProductoRepositoryImplementacion implements ProductoRepository {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al obtener todos los productos.", e);
         }
         return lista;
     }
@@ -124,13 +127,15 @@ public class ProductoRepositoryImplementacion implements ProductoRepository {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, categoriaNombre);
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                lista.add(mapearProducto(rs));
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    lista.add(mapearProducto(rs));
+                }
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al buscar productos por categoría.", e);
         }
         return lista;
     }
@@ -144,13 +149,15 @@ public class ProductoRepositoryImplementacion implements ProductoRepository {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, "%" + nombre + "%");
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                lista.add(mapearProducto(rs));
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    lista.add(mapearProducto(rs));
+                }
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al buscar productos por nombre.", e);
         }
         return lista;
     }
@@ -169,17 +176,20 @@ public class ProductoRepositoryImplementacion implements ProductoRepository {
     }
 
     @Override
-    public boolean existeIdById(int id) { // Cambié el parámetro de String a int
-        String sql = "SELECT COUNT(*) AS cnt FROM producto WHERE idproducto = ?";
+    public boolean existeIdById(int id) {
+        String sql = "SELECT COUNT(idproducto) AS cnt FROM producto WHERE idproducto = ?";
         try (Connection conn = ConfiguracionBaseDatos.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, id); // Cambié setString por setInt
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return rs.getInt("cnt") > 0;
+            stmt.setInt(1, id);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("cnt") > 0;
+                }
             }
+
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error de BD al verificar existencia de producto por ID.", e);
         }
         return false;
     }

@@ -10,7 +10,5 @@ public interface VentaRepository {
     Venta findById(int id);
     List<Venta> findAll();
     List<Venta> findByCliente(String dniCliente);
-
-    //  registrar productos no encontrados
     void registrarProductoNoEncontrado(Integer idProductoSolicitado, String nombreProductoSolicitado, Integer vendedorId);
 }
