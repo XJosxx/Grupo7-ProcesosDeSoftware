@@ -1,11 +1,10 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.apptienda">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="apptienda"
+        android:label="final_solution"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
-            android:name=".MainActivity"
+            android:name="io.carpets.LauncherActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:taskAffinity=""
