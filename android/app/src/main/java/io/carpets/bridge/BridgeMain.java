@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import io.carpets.flutterbridge.MethodChannelHandler;
 
 /**
  * FlutterBridge (deprecated)
@@ -14,13 +15,18 @@ import java.util.function.Function;
  */
 public class BridgeMain{
 
+    MethodChannelHandler MCH;
+
      public BridgeMain(){
+        MCH = new MethodChannelHandler();
          CargarFunciones();
      }
 
     HashMap<String, Function<Object, Object>> VoidFunc= new HashMap<String, Function<Object, Object>>();
     HashMap<String, Function<Object, Object>> Funct= new HashMap<String, Function<Object, Object>>();
     HashMap<String, BiFunction<Object, Object, Object>> Bifunc = new HashMap<String, BiFunction<Object, Object, Object>>();
+
+    private final String login = "login";
 
     public Object Dirigir(String Funcion, List<Object> List){
         if(List.isEmpty())        { Redirigir(Funcion, List); }
@@ -44,6 +50,15 @@ public class BridgeMain{
 
 
     void CargarFunciones(){
+        //Funciones Sin parámetros
+            //Al parecer, en Loggin no hay
+            
+        //Funciones con un parámetro
+            //nom
+
+        //Funciones con dos parámetros o más
+        Bifunc.put(login, (Object dni, Object password) -> MCH.login(dni.toString(), password.toString()));
+
 
     }
      

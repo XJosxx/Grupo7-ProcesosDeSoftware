@@ -19,6 +19,16 @@ import java.util.function.Function;
  */
 public class BridgeVenta{
 
+    //Sin parametros
+    private final String listarVentas = "listVentas";
+
+    //Un Parametro
+    private final String obtenerVentasPorDia = "getVentaPorDay";
+
+    //Dos parametros
+    private final String registrarVenta = "regVenta";
+    private final String generarBoleta = "genBoletaVenta";
+
      public BridgeVenta(){
          CargarFunciones();
      }
@@ -49,6 +59,11 @@ public class BridgeVenta{
 
 
     void CargarFunciones(){
+        //Funciones sin parámetros
+
+        //Funciones con un parámetro
+
+        //Funciones con dos o más parametros
 
     }
      
