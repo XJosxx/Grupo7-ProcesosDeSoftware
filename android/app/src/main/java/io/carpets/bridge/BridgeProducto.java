@@ -5,12 +5,12 @@ import android.os.Build;
 import androidx.annotation.RequiresApi;
 import io.carpets.flutterbridge.MethodChannelHandler;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import com.google.gson.gson;
 import io.carpets.entidades.Producto;
 
 /**
@@ -33,12 +33,12 @@ public class BridgeProducto{
     private final String eliminarProducto =                     "deleteProduct";
     private final String validarProductoExiste =                "ProductoExists";
     private final String buscarProductoEnVentaPorIdONombre =    "SearchIdNombre";
-    private final String calcularTotalVenta =                   "calcTotVenta";
-    private final String calcularMontosVentaCompleta =          "calcAllMontos";
 
+    private final String obtenerProductoPorId =                 "getProdID";
     //Dos Parametros
     private final String buscarProductos =                      "searchProducts";
-    private final String calcularMontos =                       "calcMontos";
+
+    private final String validarStock =                         "ValStock";
 
     HashMap<String, Function<Object, Object>> VoidFunc= new HashMap<String, Function<Object, Object>>();
     HashMap<String, Function<Object, Object>> Funct= new HashMap<String, Function<Object, Object>>();
@@ -46,7 +46,6 @@ public class BridgeProducto{
 
     MethodChannelHandler MCH;
 
-    Gson Gson = new Gson();
 
      public BridgeProducto(){
          MCH = new MethodChannelHandler();
@@ -77,49 +76,53 @@ public class BridgeProducto{
 
      void CargarFunciones(){
         //Funciones sin parámetros
-            VoidFunc.put(obtenerProductos, MCH.actualizarProducto());
+            VoidFunc.put(obtenerProductos, (Object r) -> MCH.obtenerProductos());
 
         //Funciones con un parámetro
-        Funct.put(agregarProducto, (Map<String, Object> Mapa) -> {
-            MCH.agregarProducto(
+        Funct.put(agregarProducto, (Object Map) -> {
+            Map<String, Object> Mapa = (Map<String, Object>) Map;
+            return MCH.agregarProducto(
                 new Producto(
-                    Mapa.get("id"),
-                    Mapa.get("nombre"),
-                    Mapa.get("fechaIngreso"),
-                    Mapa.get("precioCompra"),
-                    Mapa.get("precioVenta"),
-                    Mapa.get("cantidad"),
-                    Mapa.get("categoriaNombre"),
-                    Mapa.get("codigo")
+                        (int)       Mapa.get("id"),
+                        (String)    Mapa.get("nombre"),
+                        (Date)      Mapa.get("fechaIngreso"),
+                        (double)    Mapa.get("precioCompra"),
+                        (double)    Mapa.get("precioVenta"),
+                        (int)       Mapa.get("cantidad"),
+                        (String)    Mapa.get("categoriaNombre"),
+                        (String)    Mapa.get("codigo")
                     ));
+
         });
-        Funct.put(actualizarProducto, (Map<String, Object> Mapa) -> {
-            MCH.actualizarProducto(
+        Funct.put(actualizarProducto, (Object Map) -> {
+            Map<String, Object> Mapa = (Map<String, Object>) Map;
+            return MCH.actualizarProducto(
                 new Producto(
-                    Mapa.get("id"),
-                    Mapa.get("nombre"),
-                    Mapa.get("fechaIngreso"),
-                    Mapa.get("precioCompra"),
-                    Mapa.get("precioVenta"),
-                    Mapa.get("cantidad"),
-                    Mapa.get("categoriaNombre"),
-                    Mapa.get("codigo")
+                        (int)       Mapa.get("id"),
+                        (String)    Mapa.get("nombre"),
+                        (Date)      Mapa.get("fechaIngreso"),
+                        (double)    Mapa.get("precioCompra"),
+                        (double)    Mapa.get("precioVenta"),
+                        (int)       Mapa.get("cantidad"),
+                        (String)    Mapa.get("categoriaNombre"),
+                        (String)    Mapa.get("codigo")
                     ));
         });
 
         Funct.put(eliminarProducto, (Object idProducto) -> {
-            MCH.eliminarProducto(idProducto);
+            return MCH.eliminarProducto((int)idProducto);
         });
         
-        Funct.put(validarProductoExiste, (Object productoId) -> MCH.validarProductoExiste((int) productoId));
-        Funct.put(buscarProductoEnVentaPorIdONombre, (Object criterio) -> MCH.buscarProductoEnVentaPorIdONombre(criterio));
+        Funct.put(validarProductoExiste, (Object productoId) -> {return MCH.validarProductoExiste((int) productoId);});
+        Funct.put(buscarProductoEnVentaPorIdONombre, (Object criterio) -> {return MCH.buscarProductoEnVentaPorIdONombre((String)criterio);});
+        Funct.put(obtenerProductoPorId, (Object id) -> {return MCH.obtenerProductoPorId((int) id);});
         //Falta CalcularMontos VentaCompleta y CalcularTotalVenta
-        
+
+
         
         //Funciones con dos o más parametros
-        Bifunc.put(buscarProductos, (Object criterio, Object tipo) -> MCH.buscarProductos((String)criterio, (String)tipo));
-        Bifunc.put(calcularMontos, (Object precioUnitario, Object cantidad) -> MCH.calcularMontos((double) precioUnitario, (int) cantidad));
-        
+        Bifunc.put(buscarProductos, (Object criterio, Object tipo) -> { return MCH.buscarProductos((String)criterio, (String)tipo); });
+        Bifunc.put(validarStock, (Object productoId, Object cantidad) -> {return MCH.validarStock((int) productoId, (int) cantidad);});
      }
 
 }

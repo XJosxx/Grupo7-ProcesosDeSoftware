@@ -53,4 +53,13 @@ class bridge_flutter {
       return result.toString();
     } on PlatformException catch (e) { print(e); }
   }
+
+  Future CallThree(String Acc, var a, var b, var c) async {
+    try {
+      var result = await plat.invokeMethod(Acc, [
+        a, b, c
+      ]);
+      return result.toString();
+    } on PlatformException catch (e) { print(e); }
+  }
 }

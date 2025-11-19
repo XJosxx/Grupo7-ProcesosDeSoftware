@@ -1,6 +1,8 @@
 package io.carpets.bridge;
 
 import androidx.annotation.NonNull;
+
+import io.carpets.flutterbridge.MethodChannelHandler;
 import io.flutter.embedding.android.FlutterActivity;
 import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.plugin.common.MethodChannel;
@@ -20,16 +22,21 @@ import java.util.function.Function;
 public class BridgeVenta{
 
     //Sin parametros
-    private final String listarVentas = "listVentas";
+    private final String listarVentas =                         "listVentas";
 
     //Un Parametro
-    private final String obtenerVentasPorDia = "getVentaPorDay";
-
+    private final String obtenerVentasPorDia =                  "getVentaPorDay";
+    private final String eliminarVenta =                        "deleteVenta";
+    private final String calcularMontosVentaCompleta =          "calcMontVentCom";
+    private final String calcularTotalVenta =                   "calcTotVent";
     //Dos parametros
-    private final String registrarVenta = "regVenta";
-    private final String generarBoleta = "genBoletaVenta";
+    private final String registrarVenta =                       "regVenta";
+    private final String generarBoleta =                        "genBoletaVenta";
+    private final String calcularMontos =                       "calcMontos";
 
+    private MethodChannelHandler MCH;
      public BridgeVenta(){
+         MCH = new MethodChannelHandler();
          CargarFunciones();
      }
 
@@ -60,11 +67,32 @@ public class BridgeVenta{
 
     void CargarFunciones(){
         //Funciones sin parámetros
+        VoidFunc.put(listarVentas, (Object l)->{return MCH.listarVentas();});
 
         //Funciones con un parámetro
+        Funct.put(obtenerVentasPorDia, (Object fecha)->{return MCH.obtenerVentasPorDia((String) fecha);});
+        Funct.put(eliminarVenta, (Object ventaId) ->{return MCH.eliminarVenta((int) ventaId);});
+        Funct.put(calcularMontosVentaCompleta, (Object detalles)->{
+            //convertir detalles a List<DetalleVenta>
+            return MCH.calcularMontosVentaCompleta(null);
+        });
+        Funct.put(calcularTotalVenta, (Object detalles)->{
+            //convertir detalles a List<DetalleVenta>
+            return MCH.calcularTotalVenta(null);
+        });
 
         //Funciones con dos o más parametros
+        Bifunc.put(calcularMontos, (Object precioUnitario, Object cantidad) -> { return MCH.calcularMontos((double) precioUnitario, (int) cantidad); });
 
+        Bifunc.put(registrarVenta, (Object Map, Object detalles) -> {
+            //Hacer objeto Venta
+            //Hacer objeto Lista detalleVenta
+            return MCH.registrarVenta(null, null);
+        });
+        Bifunc.put(generarBoleta,(Object ventaId, Object detalles)-> {
+            //Hacer convertir detalles a una Lista<DetalleVenta>
+            return MCH.generarBoleta((int) ventaId, null);
+        });
     }
      
 }
