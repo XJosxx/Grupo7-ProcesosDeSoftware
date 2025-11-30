@@ -12,6 +12,8 @@ public interface ServicioProducto {
     Producto obtenerPorId(int id);
     List<Producto> buscarProductos(String criterio, String tipo);
 
+    double getGananciaTotal();
+
     boolean agregarProducto(Producto producto);
 
     boolean eliminarProducto(int idProducto);

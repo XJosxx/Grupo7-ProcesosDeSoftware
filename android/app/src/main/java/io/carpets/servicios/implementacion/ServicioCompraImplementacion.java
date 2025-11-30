@@ -31,6 +31,7 @@ public class ServicioCompraImplementacion implements ServicioCompra {
     @Override
     public boolean registrarCompra(Compra compra, List<DetalleCompra> detalles) {
         try {
+
             // Guardar compra
             boolean compraGuardada = compraRepo.save(compra);
             if (!compraGuardada) {

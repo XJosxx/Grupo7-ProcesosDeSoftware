@@ -11,6 +11,7 @@ public interface ProductoRepository {
     List<Producto> findAll();
     List<Producto> findByCategoria(String categoriaNombre);
     List<Producto> findByNombre(String nombre);
+    double getGananciaTotal();
 
     boolean existeIdById(int id);
 

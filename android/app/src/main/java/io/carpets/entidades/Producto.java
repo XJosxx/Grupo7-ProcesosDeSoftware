@@ -11,7 +11,8 @@ public class Producto {
     private double precioVenta;
     private int cantidad;
     private String categoriaNombre;
-
+    private String imagePath;
+    private Double precioOferta;
 
     public Producto() {}
 
@@ -82,6 +83,10 @@ public class Producto {
     public void setCategoriaNombre(String categoriaNombre) {
         this.categoriaNombre = categoriaNombre;
     }
+    public String getImagePath() { return imagePath; }
+    public void setImagePath(String imagePath) { this.imagePath = imagePath; }
+    public Double getPrecioOferta() { return precioOferta; }
+    public void setPrecioOferta(Double precioOferta) { this.precioOferta = precioOferta; }
 
 
 

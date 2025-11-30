@@ -6,60 +6,46 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import io.carpets.flutterbridge.MethodChannelHandler;
 
-/**
- * FlutterBridge (deprecated)
- * - El bridge que antes exponía métodos para Flutter fue deshabilitado.
- * - Mantengo una clase placeholder para que referencias al paquete no rompan la compilación.
- * - Si el equipo frontend necesita un bridge, deberán implementar un MethodChannel/REST
- *   sobre esta lógica en una versión separada.
- */
-public class BridgeMain{
-
+public class BridgeMain {
     MethodChannelHandler MCH;
 
-     public BridgeMain(){
+    public BridgeMain() {
         MCH = new MethodChannelHandler();
-         CargarFunciones();
-     }
+        CargarFunciones();
+    }
 
-    HashMap<String, Function<Object, Object>> VoidFunc= new HashMap<String, Function<Object, Object>>();
-    HashMap<String, Function<Object, Object>> Funct= new HashMap<String, Function<Object, Object>>();
-    HashMap<String, BiFunction<Object, Object, Object>> Bifunc = new HashMap<String, BiFunction<Object, Object, Object>>();
+    HashMap<String, Function<Object, Object>> VoidFunc = new HashMap<>();
+    HashMap<String, Function<Object, Object>> Funct = new HashMap<>();
+    HashMap<String, BiFunction<Object, Object, Object>> Bifunc = new HashMap<>();
 
     private final String login = "login";
-
-    public Object Dirigir(String Funcion, List<Object> List){
-        if(List.isEmpty())        { Redirigir(Funcion, List); }
-        else if( List.size() == 1 ) { RedirigirFunction(Funcion, List); }
-        else                        { RedirigirBifunction(Funcion, List); }
-        return null;
+    public Object Dirigir(String Funcion, List<Object> List) {
+        if (List.isEmpty()) {
+            return Redirigir(Funcion, List);
+        } else if (List.size() == 1) {
+            return RedirigirFunction(Funcion, List);
+        } else {
+            return RedirigirBifunction(Funcion, List);
+        }
     }
+
 
     private Object Redirigir(String Funcion, List<Object> List) {
-        return VoidFunc.get(Funcion);
+        Function<Object, Object> f = VoidFunc.get(Funcion);
+        return (f != null) ? f.apply(List) : null;
     }
 
-    private Object RedirigirFunction(String Funcion, List<Object> List){
-        return Funct.get(Funcion).apply(List.get(0));
+    private Object RedirigirFunction(String Funcion, List<Object> List) {
+        Function<Object, Object> f = Funct.get(Funcion);
+        return (f != null) ? f.apply(List.get(0)) : null;
     }
 
     private Object RedirigirBifunction(String Funcion, List<Object> List) {
-        return Bifunc.get(Funcion).apply(List.get(0), List.get(1));
+        BiFunction<Object, Object, Object> f = Bifunc.get(Funcion);
+        return (f != null) ? f.apply(List.get(0), List.get(1)) : null;
     }
 
-
-
-    void CargarFunciones(){
-        //Funciones Sin parámetros
-            //Al parecer, en Loggin no hay
-            
-        //Funciones con un parámetro
-            //nom
-
-        //Funciones con dos parámetros o más
+    void CargarFunciones() {
         Bifunc.put(login, (Object dni, Object password) -> MCH.login(dni.toString(), password.toString()));
-
-
     }
-     
 }

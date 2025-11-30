@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import '../modelos/activity_event_model.dart'; // Asegúrate que esta ruta sea correcta
+import '../modelos/activity_event_model.dart';
 
 // Este servicio es el "cerebro" que almacena la lista de actividades
 // para que 'home_page.dart' la pueda leer.

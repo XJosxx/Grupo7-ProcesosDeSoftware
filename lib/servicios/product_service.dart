@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
-// Asegúrate que esta ruta sea correcta
-import '../modelos/product_model.dart'; // Esta ruta ya era correcta
+import '../modelos/product_model.dart';
 
 // Este servicio centraliza toda la lógica de productos
 // Reemplaza la lista estática que estaba en 'productos_page.dart'

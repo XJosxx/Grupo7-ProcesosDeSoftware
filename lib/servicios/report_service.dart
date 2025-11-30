@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-// Asegúrate que esta ruta sea correcta
 import '../modelos/report_model.dart';
 
 class ReportService {

@@ -22,7 +22,7 @@ class SummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: fullWidth ? double.infinity : null,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16), // Menos padding horizontal
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(16),
@@ -30,21 +30,36 @@ class SummaryCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween, // Distribuye espacio
         children: [
           Row(
             children: [
               CircleAvatar(
+                radius: 16, // Icono un poco más pequeño
                 backgroundColor: iconColor.withOpacity(0.1),
-                child: Icon(icon, color: iconColor),
+                child: Icon(icon, color: iconColor, size: 18),
               ),
               const SizedBox(width: 8),
-              Text(title, style: const TextStyle(color: Colors.grey, fontSize: 14)),
+              // Flexible evita que el título rompa la tarjeta
+              Flexible(
+                child: Text(
+                  title,
+                  style: const TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.bold),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+          // FittedBox hace que si el número es gigante (S/10,000.00), se achique la letra para caber
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),

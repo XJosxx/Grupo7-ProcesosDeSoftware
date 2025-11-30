@@ -1,98 +1,117 @@
 package io.carpets.bridge;
 
-import androidx.annotation.NonNull;
-
 import io.carpets.flutterbridge.MethodChannelHandler;
-import io.flutter.embedding.android.FlutterActivity;
-import io.flutter.embedding.engine.FlutterEngine;
-import io.flutter.plugin.common.MethodChannel;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList; // Importante
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-/**
- * FlutterBridge (deprecated)
- * - El bridge que antes exponía métodos para Flutter fue deshabilitado.
- * - Mantengo una clase placeholder para que referencias al paquete no rompan la compilación.
- * - Si el equipo frontend necesita un bridge, deberán implementar un MethodChannel/REST
- *   sobre esta lógica en una versión separada.
- */
-public class BridgeVenta{
+public class BridgeVenta {
+    private final String listarVentas = "listVentas";
+    private final String registrarVenta = "regVenta";
 
-    //Sin parametros
-    private final String listarVentas =                         "listVentas";
+    // ... (otros strings se mantienen igual) ...
+    private final String obtenerVentasPorDia = "getVentaPorDay";
+    private final String eliminarVenta = "deleteVenta";
+    private final String calcularMontosVentaCompleta = "calcMontVentCom";
+    private final String calcularTotalVenta = "calcTotVent";
+    private final String generarBoleta = "genBoletaVenta";
+    private final String calcularMontos = "calcMontos";
 
-    //Un Parametro
-    private final String obtenerVentasPorDia =                  "getVentaPorDay";
-    private final String eliminarVenta =                        "deleteVenta";
-    private final String calcularMontosVentaCompleta =          "calcMontVentCom";
-    private final String calcularTotalVenta =                   "calcTotVent";
-    //Dos parametros
-    private final String registrarVenta =                       "regVenta";
-    private final String generarBoleta =                        "genBoletaVenta";
-    private final String calcularMontos =                       "calcMontos";
+    HashMap<String, Function<Object, Object>> VoidFunc = new HashMap<>();
+    HashMap<String, Function<Object, Object>> Funct = new HashMap<>();
+    HashMap<String, BiFunction<Object, Object, Object>> Bifunc = new HashMap<>();
 
-    private MethodChannelHandler MCH;
-     public BridgeVenta(){
-         MCH = new MethodChannelHandler();
-         CargarFunciones();
-     }
+    MethodChannelHandler MCH;
 
-    HashMap<String, Function<Object, Object>> VoidFunc= new HashMap<String, Function<Object, Object>>();
-    HashMap<String, Function<Object, Object>> Funct= new HashMap<String, Function<Object, Object>>();
-    HashMap<String, BiFunction<Object, Object, Object>> Bifunc = new HashMap<String, BiFunction<Object, Object, Object>>();
+    public BridgeVenta() {
+        MCH = new MethodChannelHandler();
+        CargarFunciones();
+    }
 
-
-    public void Dirigir(String Funcion, List<Object> List){
-        if(List.isEmpty())        { Redirigir(Funcion, List); }
-        else if( List.size() == 1 ) { RedirigirFunction(Funcion, List); }
-        else                        { RedirigirBifunction(Funcion, List); }
+    public Object Dirigir(String Funcion, List<Object> List) {
+        if (List.isEmpty()) {
+            return Redirigir(Funcion, List);
+        } else if (List.size() == 1) {
+            return RedirigirFunction(Funcion, List);
+        } else {
+            return RedirigirBifunction(Funcion, List);
+        }
     }
 
     private Object Redirigir(String Funcion, List<Object> List) {
-        return VoidFunc.get(Funcion);
+        Function<Object, Object> f = VoidFunc.get(Funcion);
+        return (f != null) ? f.apply(List) : null;
     }
 
-    private Object RedirigirFunction(String Funcion, List<Object> List){
-        return Funct.get(Funcion).apply(List.get(0));
+    private Object RedirigirFunction(String Funcion, List<Object> List) {
+        Function<Object, Object> f = Funct.get(Funcion);
+        return (f != null) ? f.apply(List.get(0)) : null;
     }
 
     private Object RedirigirBifunction(String Funcion, List<Object> List) {
-        return Bifunc.get(Funcion).apply(List.get(0), List.get(1));
+        BiFunction<Object, Object, Object> f = Bifunc.get(Funcion);
+        return (f != null) ? f.apply(List.get(0), List.get(1)) : null;
     }
 
+    void CargarFunciones() {
+        // Funciones sin parámetros
+        VoidFunc.put(listarVentas, (Object l) -> MCH.listarVentas());
 
+        // Funciones con un parámetro
+        Funct.put(obtenerVentasPorDia, (Object f) -> MCH.obtenerVentasPorDia((String) f));
+        Funct.put(eliminarVenta, (Object id) -> MCH.eliminarVenta((int) id));
 
-    void CargarFunciones(){
-        //Funciones sin parámetros
-        VoidFunc.put(listarVentas, (Object l)->{return MCH.listarVentas();});
+        // Funciones con dos parámetros (AQUÍ ESTÁ LA MAGIA DEL CARRITO)
+        Bifunc.put(registrarVenta, (Object ventaMapObj, Object detallesListObj) -> {
+            try {
+                Map<String, Object> ventaMap = (Map<String, Object>) ventaMapObj;
+                List<?> rawList = (List<?>) detallesListObj; // Recibimos lista genérica
 
-        //Funciones con un parámetro
-        Funct.put(obtenerVentasPorDia, (Object fecha)->{return MCH.obtenerVentasPorDia((String) fecha);});
-        Funct.put(eliminarVenta, (Object ventaId) ->{return MCH.eliminarVenta((int) ventaId);});
-        Funct.put(calcularMontosVentaCompleta, (Object detalles)->{
-            //convertir detalles a List<DetalleVenta>
-            return MCH.calcularMontosVentaCompleta(null);
-        });
-        Funct.put(calcularTotalVenta, (Object detalles)->{
-            //convertir detalles a List<DetalleVenta>
-            return MCH.calcularTotalVenta(null);
-        });
+                io.carpets.entidades.Venta venta = new io.carpets.entidades.Venta();
 
-        //Funciones con dos o más parametros
-        Bifunc.put(calcularMontos, (Object precioUnitario, Object cantidad) -> { return MCH.calcularMontos((double) precioUnitario, (int) cantidad); });
+                // Mapeo seguro de la Cabecera
+                if (ventaMap.get("clienteDni") != null)
+                    venta.setClienteDni(String.valueOf(ventaMap.get("clienteDni")));
 
-        Bifunc.put(registrarVenta, (Object Map, Object detalles) -> {
-            //Hacer objeto Venta
-            //Hacer objeto Lista detalleVenta
-            return MCH.registrarVenta(null, null);
-        });
-        Bifunc.put(generarBoleta,(Object ventaId, Object detalles)-> {
-            //Hacer convertir detalles a una Lista<DetalleVenta>
-            return MCH.generarBoleta((int) ventaId, null);
+                if (ventaMap.get("descripcion") != null)
+                    venta.setDescripcion(String.valueOf(ventaMap.get("descripcion")));
+
+                venta.setFecha(new java.util.Date());
+                venta.setVendedorId(1); // O el ID del usuario logueado si lo tuvieras
+
+                // Mapeo seguro de la Lista de Detalles (Carrito)
+                java.util.List<io.carpets.entidades.DetalleVenta> detalles = new ArrayList<>();
+
+                for (Object itemObj : rawList) {
+                    Map<String, Object> detMap = (Map<String, Object>) itemObj;
+                    io.carpets.entidades.DetalleVenta d = new io.carpets.entidades.DetalleVenta();
+
+                    // Conversión robusta de números (evita crash Integer vs Double)
+                    if (detMap.get("productoId") != null)
+                        d.setProductoId(Integer.parseInt(detMap.get("productoId").toString()));
+
+                    if (detMap.get("cantidad") != null)
+                        d.setCantidad(Integer.parseInt(detMap.get("cantidad").toString()));
+
+                    if (detMap.get("precioUnitario") != null)
+                        d.setPrecioUnitario(Double.parseDouble(detMap.get("precioUnitario").toString()));
+
+                    detalles.add(d);
+                }
+
+                // Enviamos al servicio que ya sabe guardar en bloque y actualizar stock
+                return MCH.registrarVenta(venta, detalles);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                Map<String, Object> error = new HashMap<>();
+                error.put("status", "error");
+                error.put("mensaje", "Error en Bridge Java: " + e.getMessage());
+                return error;
+            }
         });
     }
-     
 }

@@ -23,6 +23,10 @@ public class ServicioProductoImplementacion implements ServicioProducto {
         repo.update(producto);
     }
 
+    public double getGananciaTotal(){
+        return repo.getGananciaTotal();
+    }
+
     @Override
     public List<Producto> obtenerTodos() {
         return repo.findAll();

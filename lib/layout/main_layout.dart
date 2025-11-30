@@ -1,14 +1,12 @@
-import 'package:flutter/animation.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import '../pages/compras_page.dart'; // Ruta corregida
-import '../pages/home_page.dart'; // Ruta corregida
-import '../pages/productos_page.dart'; // Ruta corregida
-import '../pages/reportes_page.dart'; // Ruta corregida
-import '../pages/ventas_page.dart'; // Ruta corregida
-import '../pages/promociones_page.dart'; // Ruta corregida
-
+import '../pages/compras_page.dart';
+import '../pages/home_page.dart';
+import '../pages/productos_page.dart';
+import '../pages/reportes_page.dart';
+import '../pages/ventas_page.dart';
+import '../pages/promociones_page.dart';
+import '../pages/configuracion_page.dart';
 
 class MainLayout extends StatefulWidget {
   final String userRole;
@@ -36,8 +34,9 @@ class _MainLayoutState extends State<MainLayout> {
         const ProductosPage(),
         const VentasPage(),
         const ComprasPage(),
-        const PromocionesPage(), // ⭐️ NUEVA PÁGINA PARA ADMIN
+        const PromocionesPage(),
         const ReportesPage(),
+        const ConfiguracionPage(),
       ];
       _navBarItems = const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: "Inicio"),
@@ -47,15 +46,12 @@ class _MainLayoutState extends State<MainLayout> {
             icon: Icon(Icons.receipt_long), label: "Ventas"),
         BottomNavigationBarItem(
             icon: Icon(Icons.local_shipping), label: "Compras"),
-        BottomNavigationBarItem(
-          // ⭐️ NUEVA PESTAÑA PARA ADMIN
-            icon: Icon(Icons.local_offer),
-            label: "Promos"),
-        BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart), label: "Reportes"),
+        BottomNavigationBarItem(icon: Icon(Icons.local_offer), label: "Promos"),
+        BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: "Reportes"),
+        BottomNavigationBarItem(icon: Icon(Icons.settings), label: "Config"),
       ];
     } else {
-      // Usuario normal (no ve Compras, Promociones ni Reportes)
+      // Usuario normal
       _pages = [
         HomePage(userRole: widget.userRole),
         const ProductosPage(),
@@ -105,6 +101,10 @@ class _MainLayoutState extends State<MainLayout> {
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         items: _navBarItems,
+        type: BottomNavigationBarType
+            .fixed, // Adding fixed type to ensure all 7 items are visible
+        selectedItemColor: Theme.of(context).colorScheme.primary,
+        unselectedItemColor: Colors.grey,
       ),
     );
   }

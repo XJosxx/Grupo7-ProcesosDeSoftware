@@ -109,6 +109,12 @@ public class UsuarioRepositoryImplementacion implements UsuarioRepository {
             }
 
         } catch (SQLException e) {
+            System.out.println("WASAAAAAAAAAAAAAAA");
+            System.out.println("WASAAAAAAAAAAAAAAA");
+            System.out.println("WASAAAAAAAAAAAAAAA");
+            System.out.println("WASAAAAAAAAAAAAAAA");
+            System.out.println("WASAAAAAAAAAAAAAAA");
+            System.out.println("WASAAAAAAAAAAAAAAA");
             e.printStackTrace();
         }
         return null;

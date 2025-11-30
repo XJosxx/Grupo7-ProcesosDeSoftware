@@ -17,14 +17,19 @@ public class ConfiguracionBaseDatos {
 
     // Obtener conexión
     public static Connection getConnection() throws SQLException {
+        System.out.println("WASAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+        System.out.println("WASAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+        System.out.println("WASAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+        System.out.println("WASAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+        System.out.println("WASAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+        System.out.println("WASAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
         if (connection == null || connection.isClosed()) {
             try {
                 // Cargar driver de MySQL
-                Class.forName("com.mysql.cj.jdbc.Driver");
+                Class.forName("com.mysql.jdbc.Driver");
 
                 String url = "jdbc:mysql://" + HOST + ":" + PORT + "/" + DATABASE
-                        + "?useSSL=false&serverTimezone=UTC";
-
+                        + "?useSSL=true&requireSSL=true&verifyServerCertificate=false&serverTimezone=UTC&enabledTLSProtocols=TLSv1.2";
                 connection = DriverManager.getConnection(url, USER, PASSWORD);
                 System.out.println("Conexión a la base de datos establecida.");
             } catch (ClassNotFoundException e) {

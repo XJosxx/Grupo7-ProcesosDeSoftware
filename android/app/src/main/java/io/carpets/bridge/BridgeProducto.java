@@ -1,10 +1,9 @@
 package io.carpets.bridge;
 
 import android.os.Build;
-
 import androidx.annotation.RequiresApi;
 import io.carpets.flutterbridge.MethodChannelHandler;
-
+import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -13,57 +12,42 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import io.carpets.entidades.Producto;
 
-/**
- * FlutterBridge (deprecated)
- * - El bridge que antes exponía métodos para Flutter fue deshabilitado.
- * - Mantengo una clase placeholder para que referencias al paquete no rompan la compilación.
- * - Si el equipo frontend necesita un bridge, deberán implementar un MethodChannel/REST
- *   sobre esta lógica en una versión separada.
- */
-public class BridgeProducto{
+public class BridgeProducto {
 
-    //Listado de claves
-    //Sin parámetros
-    private final String obtenerProductos =                     "getProduct";
-    
-    //Un solo parametro
-    
-    private final String agregarProducto =                      "addProduct";
-    private final String actualizarProducto =                   "editProduct";
-    private final String eliminarProducto =                     "deleteProduct";
-    private final String validarProductoExiste =                "ProductoExists";
-    private final String buscarProductoEnVentaPorIdONombre =    "SearchIdNombre";
+    // Listado de claves
+    private final String obtenerProductos = "getProduct";
+    private final String agregarProducto = "addProduct";
+    private final String actualizarProducto = "editProduct";
+    private final String eliminarProducto = "deleteProduct";
+    private final String validarProductoExiste = "ProductoExists";
+    private final String buscarProductoEnVentaPorIdONombre = "SearchIdNombre";
+    private final String obtenerProductoPorId = "getProdID";
+    private final String buscarProductos = "searchProducts";
+    private final String validarStock = "ValStock";
+    private final String getGananciaTotal = "SumGanancia";
 
-    private final String obtenerProductoPorId =                 "getProdID";
-    //Dos Parametros
-    private final String buscarProductos =                      "searchProducts";
-
-    private final String validarStock =                         "ValStock";
-
-    HashMap<String, Function<Object, Object>> VoidFunc= new HashMap<String, Function<Object, Object>>();
-    HashMap<String, Function<Object, Object>> Funct= new HashMap<String, Function<Object, Object>>();
-    HashMap<String, BiFunction<Object, Object, Object>> Bifunc = new HashMap<String, BiFunction<Object, Object, Object>>();
+    HashMap<String, Function<Object, Object>> VoidFunc = new HashMap<>();
+    HashMap<String, Function<Object, Object>> Funct = new HashMap<>();
+    HashMap<String, BiFunction<Object, Object, Object>> Bifunc = new HashMap<>();
 
     MethodChannelHandler MCH;
 
+    public BridgeProducto() {
+        MCH = new MethodChannelHandler();
+        CargarFunciones();
+    }
 
-     public BridgeProducto(){
-         MCH = new MethodChannelHandler();
-         CargarFunciones();
-         
-     }
-
-    public Object Dirigir(String Funcion, List<Object> List){
-        if(List.isEmpty())        { return Redirigir(Funcion, List); }
-        else if( List.size() == 1 ) { return RedirigirFunction(Funcion, List); }
-        else                        { return RedirigirBifunction(Funcion, List); }
+    public Object Dirigir(String Funcion, List<Object> List) {
+        if (List.isEmpty()) { return Redirigir(Funcion, List); }
+        else if (List.size() == 1) { return RedirigirFunction(Funcion, List); }
+        else { return RedirigirBifunction(Funcion, List); }
     }
 
     private Object Redirigir(String Funcion, List<Object> List) {
-        return VoidFunc.get(Funcion);
+        return VoidFunc.get(Funcion).apply(null);
     }
 
-    private Object RedirigirFunction(String Funcion, List<Object> List){
+    private Object RedirigirFunction(String Funcion, List<Object> List) {
         return Funct.get(Funcion).apply(List.get(0));
     }
 
@@ -72,57 +56,71 @@ public class BridgeProducto{
         return Bifunc.get(Funcion).apply(List.get(0), List.get(1));
     }
 
+    void CargarFunciones() {
+        // Funciones sin parámetros
+        VoidFunc.put(obtenerProductos, (Object r) -> MCH.obtenerProductos());
+        VoidFunc.put(getGananciaTotal, (Object l) -> MCH.getGananciaTotal());
 
+        // Funciones con un parámetro
+        Funct.put(agregarProducto, (Object MapObj) -> {
+            Date D = new Date();
+            Map<String, Object> Mapa = (Map<String, Object>) MapObj;
 
-     void CargarFunciones(){
-        //Funciones sin parámetros
-            VoidFunc.put(obtenerProductos, (Object r) -> MCH.obtenerProductos());
+            // Creamos el producto para insertar
+            Producto p = new Producto(
+                    0, // ID autogenerado
+                    (String) Mapa.get("nombre"),
+                    D,
+                    Double.parseDouble(Mapa.get("precioCompra").toString()),
+                    Double.parseDouble(Mapa.get("precioVenta").toString()),
+                    Integer.parseInt(Mapa.get("cantidad").toString()),
+                    (String) Mapa.get("categoriaNombre"),
+                    "" // Código vacío por defecto
+            );
+            // Asignamos la imagen si viene
+            if (Mapa.get("imagePath") != null) {
+                p.setImagePath((String) Mapa.get("imagePath"));
+            }
 
-        //Funciones con un parámetro
-        Funct.put(agregarProducto, (Object Map) -> {
-            Map<String, Object> Mapa = (Map<String, Object>) Map;
-            return MCH.agregarProducto(
-                new Producto(
-                        (int)       Mapa.get("id"),
-                        (String)    Mapa.get("nombre"),
-                        (Date)      Mapa.get("fechaIngreso"),
-                        (double)    Mapa.get("precioCompra"),
-                        (double)    Mapa.get("precioVenta"),
-                        (int)       Mapa.get("cantidad"),
-                        (String)    Mapa.get("categoriaNombre"),
-                        (String)    Mapa.get("codigo")
-                    ));
-
-        });
-        Funct.put(actualizarProducto, (Object Map) -> {
-            Map<String, Object> Mapa = (Map<String, Object>) Map;
-            return MCH.actualizarProducto(
-                new Producto(
-                        (int)       Mapa.get("id"),
-                        (String)    Mapa.get("nombre"),
-                        (Date)      Mapa.get("fechaIngreso"),
-                        (double)    Mapa.get("precioCompra"),
-                        (double)    Mapa.get("precioVenta"),
-                        (int)       Mapa.get("cantidad"),
-                        (String)    Mapa.get("categoriaNombre"),
-                        (String)    Mapa.get("codigo")
-                    ));
+            return MCH.agregarProducto(p);
         });
 
-        Funct.put(eliminarProducto, (Object idProducto) -> {
-            return MCH.eliminarProducto((int)idProducto);
+        Funct.put(actualizarProducto, (Object MapObj) -> {
+            Date D = new Date();
+            Map<String, Object> Mapa = (Map<String, Object>) MapObj;
+
+            // CORRECCIÓN CRÍTICA: Leer el ID y la Imagen del mapa
+            int id = Integer.parseInt(Mapa.get("id").toString());
+            String imagePath = (String) Mapa.get("imagePath");
+
+            Producto p = new Producto(
+                    id, // <--- ID CORRECTO (Antes era 0)
+                    (String) Mapa.get("nombre"),
+                    D,
+                    Double.parseDouble(Mapa.get("precioCompra").toString()),
+                    Double.parseDouble(Mapa.get("precioVenta").toString()),
+                    Integer.parseInt(Mapa.get("cantidad").toString()),
+                    (String) Mapa.get("categoriaNombre"),
+                    ""
+            );
+            p.setImagePath(imagePath); // <--- IMAGEN CORRECTA (Antes era "wasa")
+
+            if (Mapa.get("salePrice") != null) {
+                p.setPrecioOferta(Double.parseDouble(Mapa.get("salePrice").toString()));
+            } else {
+                p.setPrecioOferta(null);
+            }
+
+            return MCH.actualizarProducto(p);
         });
-        
-        Funct.put(validarProductoExiste, (Object productoId) -> {return MCH.validarProductoExiste((int) productoId);});
-        Funct.put(buscarProductoEnVentaPorIdONombre, (Object criterio) -> {return MCH.buscarProductoEnVentaPorIdONombre((String)criterio);});
-        Funct.put(obtenerProductoPorId, (Object id) -> {return MCH.obtenerProductoPorId((int) id);});
-        //Falta CalcularMontos VentaCompleta y CalcularTotalVenta
 
+        Funct.put(eliminarProducto, (Object idProducto) -> MCH.eliminarProducto((int) idProducto));
+        Funct.put(validarProductoExiste, (Object productoId) -> MCH.validarProductoExiste((int) productoId));
+        Funct.put(buscarProductoEnVentaPorIdONombre, (Object criterio) -> MCH.buscarProductoEnVentaPorIdONombre((String) criterio));
+        Funct.put(obtenerProductoPorId, (Object id) -> MCH.obtenerProductoPorId((int) id));
 
-        
-        //Funciones con dos o más parametros
-        Bifunc.put(buscarProductos, (Object criterio, Object tipo) -> { return MCH.buscarProductos((String)criterio, (String)tipo); });
-        Bifunc.put(validarStock, (Object productoId, Object cantidad) -> {return MCH.validarStock((int) productoId, (int) cantidad);});
-     }
-
+        // Funciones con dos parámetros
+        Bifunc.put(buscarProductos, (Object criterio, Object tipo) -> MCH.buscarProductos((String) criterio, (String) tipo));
+        Bifunc.put(validarStock, (Object productoId, Object cantidad) -> MCH.validarStock((int) productoId, (int) cantidad));
+    }
 }

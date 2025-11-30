@@ -5,10 +5,17 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+configurations.all {
+    resolutionStrategy {
+        force("androidx.activity:activity:1.9.3")
+        force("androidx.activity:activity-ktx:1.9.3")
+    }
+}
+
 android {
     namespace = "com.example.final_solution"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    compileSdk = 36
+
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -24,8 +31,8 @@ android {
         applicationId = "com.example.final_solution"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        minSdk = 24
+        targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -79,6 +86,9 @@ dependencies {
 
     // --- KOTLIN SERIALIZATION (por si la quieres usar) ---
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+
+    //Driver JDBC
+    implementation("mysql:mysql-connector-java:5.1.49")
 }
 flutter {
     source = "../.."

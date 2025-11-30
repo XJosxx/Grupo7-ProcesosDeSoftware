@@ -1,7 +1,12 @@
-import '../screens/LoginScreen.dart'; // Ruta corregida
 import 'package:flutter/material.dart';
+import 'screens/login_screen.dart';
+import 'servicios/theme_service.dart';
+import 'servicios/preferences_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Inicializamos las preferencias antes de arrancar la app
+  await PreferencesService.instance.init();
   runApp(const StitchApp());
 }
 
@@ -10,57 +15,58 @@ class StitchApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 🎨 NUEVO TEMA: Colores más vivos y femeninos
-    final Color primaryColor = const Color(0xFF00695C); // Verde Teal
-    final Color secondaryColor = const Color(0xFFFF7043); // Coral Vívido
-    final Color backgroundColor = const Color(0xFFF5F5F5); // Gris muy claro
+    // 1. Escuchamos el cambio de Color Principal
+    return ValueListenableBuilder<Color>(
+      valueListenable: ThemeService.instance.primaryColorNotifier,
+      builder: (context, primaryColor, _) {
 
-    return MaterialApp(
-      title: 'Stitch Design',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        fontFamily: 'Inter',
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: primaryColor,
-          primary: primaryColor,
-          secondary: secondaryColor,
-          background: backgroundColor,
-          surface: Colors.white,
-          onPrimary: Colors.white,
-          onSecondary: Colors.white,
-          onBackground: const Color(0xFF212121), // Texto oscuro
-          onSurface: const Color(0xFF212121),
-        ),
-        useMaterial3: true,
+        // 2. Escuchamos el cambio de Modo Oscuro
+        return ValueListenableBuilder<bool>(
+          valueListenable: PreferencesService.instance.darkModeNotifier,
+          builder: (context, isDark, _) {
 
-        // Estilo de AppBar
-        appBarTheme: AppBarTheme(
-          backgroundColor: Colors.white, // Fondo blanco para limpieza
-          foregroundColor: primaryColor, // Título e íconos en color primario
-          elevation: 0.5, // Sombra sutil
-          iconTheme: IconThemeData(color: primaryColor),
-          titleTextStyle: TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: primaryColor,
-          ),
-        ),
-
-        // Estilo de BottomNavigationBar
-        bottomNavigationBarTheme: BottomNavigationBarThemeData(
-          selectedItemColor: primaryColor,
-          unselectedItemColor: Colors.grey[600],
-          backgroundColor: Colors.white,
-          type: BottomNavigationBarType.fixed,
-          elevation: 2,
-        ),
-
-        // SE ELIMINARON cardTheme Y elevatedButtonTheme
-        // para evitar errores de caché del editor.
-
-      ),
-      home: const LoginScreen(),
+            return MaterialApp(
+              title: 'Stitch Design',
+              debugShowCheckedModeBanner: false,
+              // Definimos el Tema Claro
+              theme: ThemeData(
+                brightness: Brightness.light,
+                fontFamily: 'Inter',
+                colorScheme: ColorScheme.fromSeed(
+                  seedColor: primaryColor,
+                  brightness: Brightness.light,
+                ),
+                useMaterial3: true,
+                appBarTheme: AppBarTheme(
+                  backgroundColor: Colors.white,
+                  foregroundColor: primaryColor,
+                  iconTheme: IconThemeData(color: primaryColor),
+                ),
+              ),
+              // Definimos el Tema Oscuro
+              darkTheme: ThemeData(
+                brightness: Brightness.dark,
+                fontFamily: 'Inter',
+                colorScheme: ColorScheme.fromSeed(
+                  seedColor: primaryColor,
+                  brightness: Brightness.dark, // Importante
+                  surface: const Color(0xFF121212), // Fondo oscuro
+                ),
+                useMaterial3: true,
+                appBarTheme: AppBarTheme(
+                  backgroundColor: const Color(0xFF1E1E1E),
+                  foregroundColor: Colors.white,
+                  iconTheme: const IconThemeData(color: Colors.white),
+                ),
+                scaffoldBackgroundColor: const Color(0xFF121212),
+              ),
+              // Aquí la magia: Flutter decide cuál usar según la variable
+              themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+              home: const LoginScreen(),
+            );
+          },
+        );
+      },
     );
   }
 }

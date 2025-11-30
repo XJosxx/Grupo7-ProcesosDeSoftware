@@ -1,466 +1,597 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:dropdown_search/dropdown_search.dart'; // Importa el dropdown
-// Importa servicios y modelos
-import '../modelos/product_model.dart'; // Ruta corregida
-import '../servicios/product_service.dart'; // Ruta corregida
-import '../modelos/report_model.dart'; // Ruta corregida
-import '../servicios/ReportService.dart'; // Ruta corregida (usando tu nombre de archivo)
-import '../servicios/activity_service.dart'; // 👈 NUEVA IMPORTACIÓN
-import '../modelos/activity_event_model.dart'; // 👈 NUEVA IMPORTACIÓN
-import 'dart:io'; // Para mostrar la imagen
-import 'package:intl/intl.dart'; // 👈 NUEVA IMPORTACIÓN (para la fecha)
+import 'package:intl/intl.dart';
+import '../modelos/product_model.dart';
+import '../bridge_flutter.dart';
+import '../widgets/optimized_image.dart';
+import '../widgets/animated_list_item.dart';
+import '../servicios/activity_service.dart';
+import '../modelos/activity_event_model.dart';
+import 'dart:math';
+import 'package:audioplayers/audioplayers.dart';
+import '../servicios/preferences_service.dart';
+import '../widgets/stitch_loader.dart';
 
-// 🛍️ Convertido a DefaultTabController para las pestañas
-class VentasPage extends StatelessWidget {
+class VentasPage extends StatefulWidget {
   const VentasPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3, // Catálogo, Promociones, Venta Rápida
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Ventas'),
-          automaticallyImplyLeading: false,
-          bottom: const TabBar(
-            tabs: [
-              Tab(icon: Icon(Icons.store), text: 'Catálogo'),
-              Tab(icon: Icon(Icons.star), text: 'Promociones'),
-              Tab(icon: Icon(Icons.flash_on), text: 'Venta Rápida'),
-            ],
-          ),
-        ),
-        body: TabBarView(
-          children: [
-            // Pestaña 1: Catálogo
-            _buildCatalogTab(context, isPromosOnly: false),
-            // Pestaña 2: Promociones
-            _buildCatalogTab(context, isPromosOnly: true),
-            // Pestaña 3: Venta Rápida
-            _buildQuickSaleTab(context),
-          ],
-        ),
+  State<VentasPage> createState() => _VentasPageState();
+}
+
+class _VentasPageState extends State<VentasPage> with SingleTickerProviderStateMixin {
+  final BridgeFlutter _bridge = BridgeFlutter();
+  List<Product> _products = [];
+  //DNI aleatorio
+  String _generateRandomDNI() {
+    var rng = Random();
+    // Genera 8 dígitos aleatorios
+    return List.generate(8, (_) => rng.nextInt(10)).join();
+  }
+
+  // 🛒 ESTADO DEL CARRITO
+  final List<Map<String, dynamic>> _cart = [];
+
+  bool _isLoading = true;
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    // 4 Pestañas: Catálogo, Promociones, Venta Rápida, Carrito
+    _tabController = TabController(length: 4, vsync: this);
+    _loadProducts();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadProducts() async {
+    setState(() => _isLoading = true);
+    try {
+      final List<dynamic> rawProducts = await _bridge.obtenerProductos();
+      _products = rawProducts.map((p) {
+        return Product(
+          id: p['id'].toString(),
+          name: p['nombre'] ?? 'Sin nombre',
+          category: p['categoriaNombre'] ?? 'General',
+          price: (p['precioVenta'] ?? 0).toDouble(),
+          stock: p['cantidad'] ?? 0,
+          imagePath: p['imagePath'],
+          salePrice: p['salePrice'],
+        );
+      }).toList();
+    } catch (e) {
+      print("Error loading products: $e");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // --- LÓGICA DEL CARRITO ---
+  void _addToCart(Product product, int quantity) {
+    setState(() {
+      final existingIndex = _cart.indexWhere((item) => item['product'].id == product.id);
+
+      if (existingIndex >= 0) {
+        int currentQty = _cart[existingIndex]['qty'];
+        int newQty = currentQty + quantity;
+        if (newQty > product.stock) newQty = product.stock;
+        _cart[existingIndex]['qty'] = newQty;
+      } else {
+        _cart.add({
+          'product': product,
+          'qty': quantity,
+          'price': product.onSale ? product.salePrice : product.price
+        });
+      }
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${product.name} agregado al carrito'),
+        duration: const Duration(milliseconds: 600),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
-  // 🛍️ PESTAÑA 1 y 2: CATÁLOGO Y PROMOCIONES
-  Widget _buildCatalogTab(BuildContext context, {required bool isPromosOnly}) {
-    final productService = ProductService.instance;
+  void _removeFromCart(int index) {
+    setState(() {
+      _cart.removeAt(index);
+    });
+  }
 
-    return ValueListenableBuilder<List<Product>>(
-      valueListenable: productService.productsNotifier,
-      builder: (context, products, child) {
-        // Filtra por promos o muestra todos
-        final productList = isPromosOnly
-            ? productService.getPromotions()
-            : products;
+  double _calculateTotal() {
+    return _cart.fold(0.0, (sum, item) => sum + (item['price'] * item['qty']));
+  }
 
-        if (productList.isEmpty) {
-          return Center(
-            child: Text(isPromosOnly
-                ? "No hay promociones activas."
-                : "No hay productos en el catálogo."),
-          );
+  // --- PROCESAR VENTA DEL CARRITO (CHECKOUT) ---
+  Future<void> _processCheckout() async {
+    if (_cart.isEmpty) return;
+    setState(() => _isLoading = true);
+
+    try {
+      final ventaMap = {
+        'descripcion': 'Venta Carrito (${_cart.length} items)',
+        'clienteDni': _generateRandomDNI(), // ⚠️ RECUERDA EJECUTAR EL SQL DEL PASO 1
+      };
+
+      final List<Map<String, dynamic>> detallesList = _cart.map((item) {
+        Product p = item['product'];
+        return {
+          'productoId': int.parse(p.id),
+          'cantidad': item['qty'],
+          'precioUnitario': item['price'],
+        };
+      }).toList();
+
+      final response = await _bridge.registrarVenta(ventaMap, detallesList);
+
+      if (response['status'] == 'ok') {
+        // REPRODUCIR SONIDO SI ESTÁ ACTIVADO
+        if (PreferencesService.instance.soundNotifier.value) {
+          try {
+            final player = AudioPlayer();
+            // Asegúrate de tener el archivo assets/sounds/sale.mp3
+            await player.play(AssetSource('sounds/sale.mp3'));
+          } catch (e) {
+            print("Error reproduciendo sonido: $e");
+          }
+        }
+        // ÉXITO REAL
+        ActivityService.instance.addActivity(ActivityEvent(
+          title: 'Venta Carrito',
+          subtitle: '${_cart.length} items por S/${_calculateTotal().toStringAsFixed(2)}',
+          icon: Icons.shopping_cart_checkout,
+          color: Colors.green,
+          timestamp: DateTime.now(),
+        ));
+
+        double totalVenta = _calculateTotal();
+
+        // Limpiar y Recargar Stock
+        setState(() {
+          _cart.clear();
+        });
+        await _loadProducts();
+
+        if (mounted) {
+          _showOldStyleInvoiceDialog(response['id'].toString(), detallesList, totalVenta, isManual: false);
+        }
+      } else {
+        // ERROR DEL BACKEND (Aquí caía antes)
+        _showErrorSnack('Error Backend: ${response['mensaje']}');
+      }
+    } catch (e) {
+      _showErrorSnack('Error de conexión: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+
+  }
+
+  // --- LÓGICA VENTA RÁPIDA (MANUAL) ---
+  Future<void> _processQuickSale(String name, double price, int qty) async {
+    setState(() => _isLoading = true);
+
+    final product = _products.firstWhere(
+            (p) => p.name.toLowerCase() == name.toLowerCase(),
+        orElse: () => Product(id: '0', name: name, category: '', price: price)
+    );
+
+    int prodId = int.parse(product.id);
+
+    final ventaMap = {
+      'descripcion': 'Venta Rápida: $name',
+      'clienteDni': _generateRandomDNI(), //
+    };
+
+    final detalleMap = {
+      'productoId': prodId,
+      'cantidad': qty,
+      'precioUnitario': price,
+    };
+
+    try {
+      final response = await _bridge.registrarVenta(ventaMap, [detalleMap]);
+
+      if (response['status'] == 'ok') {
+
+        // REPRODUCIR SONIDO SI ESTÁ ACTIVADO
+        if (PreferencesService.instance.soundNotifier.value) {
+          try {
+            final player = AudioPlayer();
+            // Asegúrate de tener el archivo assets/sounds/sale.mp3
+            await player.play(AssetSource('sounds/sale.mp3'));
+          } catch (e) {
+            print("Error reproduciendo sonido: $e");
+          }
         }
 
-        // Grid similar a la página de productos
-        return GridView.builder(
-          padding: const EdgeInsets.all(8),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 0.70, // 👈 CAMBIO AQUÍ (antes era 0.8)
-          ),
-          itemCount: productList.length,
-          itemBuilder: (context, index) {
-            final product = productList[index];
-            return InkWell(
-              onTap: () {
-                _showCatalogSaleDialog(context, product);
-              },
-              child: _buildProductCard(context, product),
-            );
-          },
-        );
-      },
-    );
+        ActivityService.instance.addActivity(ActivityEvent(
+          title: 'Venta Rápida',
+          subtitle: '$name (x$qty)',
+          icon: Icons.flash_on,
+          color: Colors.orange,
+          timestamp: DateTime.now(),
+        ));
+
+        await _loadProducts();
+
+        if (mounted) {
+          _showOldStyleInvoiceDialog(
+              response['id'].toString(),
+              [detalleMap],
+              price * qty,
+              isManual: true,
+              manualName: name
+          );
+        }
+      } else {
+        _showErrorSnack('Error: ${response['mensaje']}');
+      }
+    } catch (e) {
+      _showErrorSnack('Error: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
-  // Tarjeta de producto (copiada de 'productos_page' para esta vista)
-  Widget _buildProductCard(BuildContext context, Product product) {
-    // 💥 CORRECCIÓN: Definir 'theme'
-    final theme = Theme.of(context);
-    bool onSale = product.onSale;
+  void _showErrorSnack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), backgroundColor: Colors.red));
+  }
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AspectRatio(
-                aspectRatio: 1.2,
-                child: Container(
-                  color: Colors.grey[200],
-                  child: product.imagePath != null
-                      ? Image.file(
-                    File(product.imagePath!),
-                    fit: BoxFit.cover,
-                  )
-                      : const Center(
-                      child: Icon(Icons.image, color: Colors.grey, size: 40)),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      product.name,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      product.category,
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
-                    const SizedBox(height: 4),
-                    if (onSale)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "S/${product.salePrice!.toStringAsFixed(2)}", // 👈 CAMBIO S/
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.secondary,
-                              fontSize: 16,
-                            ),
-                          ),
-                          Text(
-                            "S/${product.price.toStringAsFixed(2)}", // 👈 CAMBIO S/
-                            style: TextStyle(
-                              color: Colors.grey,
-                              decoration: TextDecoration.lineThrough,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      )
-                    else
-                      Text(
-                        "S/${product.price.toStringAsFixed(2)}", // 👈 CAMBIO S/
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.primary,
-                          fontSize: 16,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if (onSale)
-            Positioned(
-              top: 8,
-              right: 8,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.secondary,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: const Text(
-                  "OFERTA",
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
+  // --- UI PRINCIPAL ---
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Punto de Venta'),
+        automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadProducts,
+            tooltip: "Recargar Stock",
+          )
         ],
-      ),
-    );
-  }
-
-  // 🛍️ PESTAÑA 3: VENTA RÁPIDA (Tu lógica anterior)
-  Widget _buildQuickSaleTab(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          ElevatedButton.icon(
-            icon: const Icon(Icons.flash_on, size: 28),
-            label: const Text('Venta Rápida Manual'),
-            onPressed: () => _showQuickSaleDialog(context),
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size(220, 60),
-              textStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              elevation: 4,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- LÓGICA DE DIÁLOGOS Y VENTAS ---
-
-  // 🛍️ Diálogo para Venta Rápida (Manual)
-  void _showQuickSaleDialog(BuildContext context) {
-    final productController = TextEditingController();
-    final priceController = TextEditingController();
-    final quantityController = TextEditingController(text: '1');
-    final formKey = GlobalKey<FormState>();
-
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('Venta Rápida'),
-          // 💥 CORRECCIÓN OVERFLOW:
-          // Se envuelve en SingleChildScrollView para evitar las rayas amarillas
-          content: SingleChildScrollView(
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  TextFormField(
-                    controller: productController,
-                    decoration: const InputDecoration(labelText: 'Nombre del Producto'),
-                    validator: (v) => v!.isEmpty ? 'Ingrese un nombre' : null,
-                  ),
-                  TextFormField(
-                    controller: priceController,
-                    keyboardType: TextInputType.number,
-                    // 💸 LÓGICA IGV: Se pide el precio FINAL
-                    decoration: const InputDecoration(labelText: 'Precio Final del Producto (S/)'),
-                    validator: (v) => (v == null || double.tryParse(v) == null)
-                        ? 'Ingrese un precio'
-                        : null,
-                  ),
-                  TextFormField(
-                    controller: quantityController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Cantidad'),
-                    validator: (v) => (v == null || int.tryParse(v) == null)
-                        ? 'Ingrese una cantidad'
-                        : null,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              child: const Text('Cancelar'),
-              onPressed: () => Navigator.of(dialogContext).pop(),
-            ),
-            ElevatedButton(
-              child: const Text('Generar Boleta'),
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  Navigator.of(dialogContext).pop();
-                  _generateInvoice(
-                    context,
-                    productController.text,
-                    double.parse(priceController.text),
-                    int.parse(quantityController.text),
-                  );
-                }
-              },
+        bottom: TabBar(
+          controller: _tabController,
+          isScrollable: true,
+          tabs: [
+            const Tab(icon: Icon(Icons.store), text: 'Catálogo'),
+            const Tab(icon: Icon(Icons.star), text: 'Promociones'),
+            const Tab(icon: Icon(Icons.flash_on), text: 'Venta Rápida'),
+            Tab(
+                icon: Badge(
+                  isLabelVisible: _cart.isNotEmpty,
+                  label: Text('${_cart.length}'),
+                  child: const Icon(Icons.shopping_cart),
+                ),
+                text: 'Carrito'
             ),
           ],
-        );
-      },
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildCatalogTab(isPromosOnly: false),
+          _buildCatalogTab(isPromosOnly: true),
+          _buildQuickSaleTab(),
+          _buildCartTab(),
+        ],
+      ),
     );
   }
 
-  // 🛍️ Diálogo para Venta por Catálogo
-  void _showCatalogSaleDialog(BuildContext context, Product product) {
-    final quantityController = TextEditingController(text: '1');
-    final formKey = GlobalKey<FormState>();
-    // El precio de venta es el de oferta si existe, si no, el normal
-    final double salePrice = product.onSale ? product.salePrice! : product.price;
+  // --- WIDGETS DE PESTAÑAS ---
 
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: Text(product.name),
-          content: Form(
-            key: formKey,
+  Widget _buildCatalogTab({required bool isPromosOnly}) {
+    if (_isLoading) return const StitchLoader();
+
+    final productList = isPromosOnly
+        ? _products.where((p) => p.onSale).toList()
+        : _products;
+
+    if (productList.isEmpty) {
+      return Center(child: Text(isPromosOnly ? "No hay promociones activas" : "Catálogo vacío"));
+    }
+
+    return GridView.builder(
+      padding: const EdgeInsets.all(8),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 0.60,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10
+      ),
+      itemCount: productList.length,
+      itemBuilder: (context, index) {
+        final product = productList[index];
+        bool outOfStock = product.stock <= 0;
+
+        return AnimatedListItem(
+          index: index,
+          child: Card(
+            elevation: 3,
+            clipBehavior: Clip.antiAlias,
             child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(
-                  "Precio: S/${salePrice.toStringAsFixed(2)}", // 👈 CAMBIO S/
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: Stack(
+                    children: [
+                      Positioned.fill(child: OptimizedImage(imagePath: product.imagePath)),
+                      if (outOfStock)
+                        Container(color: Colors.white54, child: const Center(child: Text("AGOTADO", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)))),
+                      if (product.onSale)
+                        Positioned(top: 5, right: 5, child: Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), color: Colors.red, child: const Text("OFERTA", style: TextStyle(color: Colors.white, fontSize: 10)))),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: quantityController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Cantidad'),
-                  validator: (v) => (v == null || int.tryParse(v) == null || int.parse(v) <= 0)
-                      ? 'Cantidad inválida'
-                      : null,
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(product.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      if (product.onSale) ...[
+                        Text("S/${product.price.toStringAsFixed(2)}", style: const TextStyle(decoration: TextDecoration.lineThrough, fontSize: 11, color: Colors.grey)),
+                        Text("S/${product.salePrice!.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red, fontSize: 16)),
+                      ] else
+                        Text("S/${product.price.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+
+                      Text("Stock: ${product.stock}", style: TextStyle(fontSize: 11, color: outOfStock ? Colors.red : Colors.green)),
+                      const SizedBox(height: 5),
+                      SizedBox(
+                        height: 35, // Botón un poco más alto
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(padding: EdgeInsets.zero),
+                          onPressed: outOfStock ? null : () => _showQuantityDialog(product),
+                          child: const Text("Agregar al Carrito"),
+                        ),
+                      )
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-          actions: [
-            TextButton(
-              child: const Text('Cancelar'),
-              onPressed: () => Navigator.of(dialogContext).pop(),
-            ),
-            ElevatedButton(
-              child: const Text('Generar Boleta'),
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  Navigator.of(dialogContext).pop();
-                  _generateInvoice(
-                    context,
-                    product.name,
-                    salePrice,
-                    int.parse(quantityController.text),
-                  );
-                }
-              },
-            ),
-          ],
         );
       },
     );
   }
 
-  // ⭐️⭐️⭐️ ¡BOLETA BONITA! ⭐️⭐️⭐️
-  // Función para generar la boleta (Lógica de Reportes)
-  // 💸 LÓGICA IGV: 'basePrice' ahora es 'finalPricePerUnit'
-  void _generateInvoice(BuildContext context, String product, double finalPricePerUnit, int quantity) {
+  Widget _buildQuickSaleTab() {
+    final nameCtrl = TextEditingController();
+    final priceCtrl = TextEditingController();
+    final qtyCtrl = TextEditingController(text: '1');
+    final formKey = GlobalKey<FormState>();
 
-    // 💸 LÓGICA IGV: El cálculo ahora se basa en el Precio Final
-    // 1. Calcular el Total
-    final double total = finalPricePerUnit * quantity;
-    // 2. Calcular el Subtotal (dividiendo entre 1.18)
-    final double subtotal = total / 1.18;
-    // 3. Calcular el IGV (restando)
-    final double igbAmount = total - subtotal;
-
-    final DateTime now = DateTime.now();
-
-    // 💸 4. Crea el reporte con los valores correctos
-    final newReport = Report(
-      id: now.millisecondsSinceEpoch.toString(), // Usa el timestamp como ID
-      productName: product,
-      quantity: quantity,
-      subtotal: subtotal, // 👈 Guarda el subtotal calculado
-      igv: igbAmount, // 👈 Guarda el IGV calculado
-      total: total, // 👈 Guarda el total
-      date: now,
-    );
-    ReportService.instance.addReport(newReport);
-
-    // ⭐️ YAPE: Añade a la actividad reciente
-    ActivityService.instance.addActivity(
-      ActivityEvent(
-        title: 'Venta registrada',
-        subtitle: 'S/${total.toStringAsFixed(2)} - $product',
-        icon: Icons.shopping_cart,
-        color: Colors.green,
-        timestamp: now,
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Form(
+        key: formKey,
+        child: Column(
+          children: [
+            const Icon(Icons.flash_on, size: 60, color: Colors.orange),
+            const SizedBox(height: 10),
+            const Text("Venta Manual Directa", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const Text("Registra una venta sin usar el catálogo", style: TextStyle(color: Colors.grey)),
+            const SizedBox(height: 30),
+            TextFormField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(labelText: 'Nombre del Producto', border: OutlineInputBorder(), prefixIcon: Icon(Icons.label)),
+              validator: (v) => v!.isEmpty ? 'Requerido' : null,
+            ),
+            const SizedBox(height: 15),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: priceCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Precio (S/)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.attach_money)),
+                    validator: (v) => v!.isEmpty ? 'Requerido' : null,
+                  ),
+                ),
+                const SizedBox(width: 15),
+                Expanded(
+                  child: TextFormField(
+                    controller: qtyCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Cantidad', border: OutlineInputBorder(), prefixIcon: Icon(Icons.numbers)),
+                    validator: (v) => v!.isEmpty ? 'Requerido' : null,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 30),
+            SizedBox(
+              width: double.infinity,
+              height: 55,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.check),
+                label: const Text("VENDER AHORA"),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+                onPressed: () {
+                  if (formKey.currentState!.validate()) {
+                    _processQuickSale(
+                        nameCtrl.text,
+                        double.parse(priceCtrl.text),
+                        int.parse(qtyCtrl.text)
+                    );
+                  }
+                },
+              ),
+            )
+          ],
+        ),
       ),
     );
+  }
 
-    // ⭐️ Muestra el nuevo diálogo de boleta "Bonita"
+  Widget _buildCartTab() {
+    if (_cart.isEmpty) {
+      return const Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.grey), Text("El carrito está vacío")]));
+    }
+
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.separated(
+            padding: const EdgeInsets.all(12),
+            itemCount: _cart.length,
+            separatorBuilder: (c, i) => const Divider(),
+            itemBuilder: (context, index) {
+              final item = _cart[index];
+              final Product p = item['product'];
+              return ListTile(
+                leading: SizedBox(width: 50, child: OptimizedImage(imagePath: p.imagePath)),
+                title: Text(p.name),
+                subtitle: Text('${item['qty']} x S/${item['price'].toStringAsFixed(2)}'),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('S/${(item['qty']*item['price']).toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => _removeFromCart(index))
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(blurRadius: 10, color: Colors.black12)]),
+          child: Column(
+            children: [
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text("TOTAL:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)), Text("S/${_calculateTotal().toStringAsFixed(2)}", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.green))]),
+              const SizedBox(height: 15),
+              SizedBox(width: double.infinity, height: 50, child: ElevatedButton(onPressed: _processCheckout, child: const Text("CONFIRMAR VENTA"))),
+            ],
+          ),
+        )
+      ],
+    );
+  }
+
+  void _showQuantityDialog(Product product) {
+    int qty = 1;
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateDialog) => AlertDialog(
+          title: Text("Agregar: ${product.name}"),
+          content: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            IconButton(icon: const Icon(Icons.remove), onPressed: qty > 1 ? () => setStateDialog(() => qty--) : null),
+            Text("$qty", style: const TextStyle(fontSize: 24)),
+            IconButton(icon: const Icon(Icons.add), onPressed: qty < product.stock ? () => setStateDialog(() => qty++) : null),
+          ]),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
+            ElevatedButton(onPressed: () { Navigator.pop(context); _addToCart(product, qty); }, child: const Text("Agregar"))
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 🏛️ BOLETA ESTILO ANTIGUO RESTAURADA
+  void _showOldStyleInvoiceDialog(String id, List<dynamic> items, double total, {required bool isManual, String? manualName}) {
+    final theme = Theme.of(context);
+    final double subtotal = total / 1.18;
+    final double igv = total - subtotal;
+    final DateTime now = DateTime.now();
+
     showDialog(
       context: context,
       builder: (context) {
-        final theme = Theme.of(context);
         return AlertDialog(
-          // Bordes redondeados
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          // Quitamos el padding del título para poner el ícono
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           titlePadding: const EdgeInsets.all(0),
           title: Container(
             padding: const EdgeInsets.only(top: 24, bottom: 16),
             width: double.infinity,
             decoration: BoxDecoration(
-              color: Colors.green[50], // Verde claro de éxito
+              color: Colors.green[50],
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             ),
             child: const Column(
               children: [
                 Icon(Icons.check_circle_outline, color: Colors.green, size: 60),
                 SizedBox(height: 12),
-                Text('¡Boleta Generada!', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                Text('¡Venta Exitosa!', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min, // Para que se ajuste al contenido
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              const Text(
-                "TOTAL PAGADO",
-                style: TextStyle(color: Colors.grey, fontSize: 12),
-              ),
-              // Total grande y visible
-              Text(
-                'S/${total.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 36,
-                  color: theme.colorScheme.primary,
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                const Text("TOTAL PAGADO", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                Text(
+                  'S/${total.toStringAsFixed(2)}',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 36, color: theme.colorScheme.primary),
                 ),
-              ),
-              const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 16),
-              // Detalles de la boleta con formato
-              _buildDetailRow("Producto:", "$product (x$quantity)"),
-              const SizedBox(height: 8),
-              // 💸 LÓGICA IGV: Muestra los valores calculados
-              _buildDetailRow("Subtotal:", "S/${subtotal.toStringAsFixed(2)}"),
-              const SizedBox(height: 8),
-              _buildDetailRow("IGV (18%):", "S/${igbAmount.toStringAsFixed(2)}"),
-              const SizedBox(height: 8),
-              _buildDetailRow("ID Transacción:", newReport.id),
-              const SizedBox(height: 8),
-              _buildDetailRow("Fecha:", DateFormat('dd/MM/yy hh:mma').format(now)),
-              const SizedBox(height: 24),
-              const Center(
-                child: Text(
-                  '¡Gracias por tu compra!',
-                  style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 16),
+                // Lista de productos
+                if (isManual)
+                  _buildDetailRow("Producto:", "$manualName (Venta Rápida)")
+                else ...[
+                  const Text("Detalles:", style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 5),
+                  ...items.map((item) {
+                    String pName = "Producto";
+                    try {
+                      pName = _products.firstWhere((p) => p.id == item['productoId'].toString()).name;
+                    } catch(e) {}
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 4.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(child: Text(pName, style: const TextStyle(fontSize: 13))),
+                          Text("x${item['cantidad']}  S/${item['precioUnitario']}", style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+                const SizedBox(height: 16),
+                const Divider(),
+                _buildDetailRow("Subtotal:", "S/${subtotal.toStringAsFixed(2)}"),
+                const SizedBox(height: 8),
+                _buildDetailRow("IGV (18%):", "S/${igv.toStringAsFixed(2)}"),
+                const SizedBox(height: 8),
+                _buildDetailRow("Fecha:", DateFormat('dd/MM/yy hh:mma').format(now)),
+                const SizedBox(height: 8),
+                _buildDetailRow("Nro Boleta:", "B-$id"),
+                const SizedBox(height: 24),
+                const Center(
+                  child: Text('¡Gracias por tu compra!', style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey)),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           actionsPadding: const EdgeInsets.all(16),
           actions: [
-            // Botón de cerrar más moderno
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    )
-                ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))),
                 child: const Text('Cerrar', style: TextStyle(fontSize: 16)),
                 onPressed: () => Navigator.of(context).pop(),
               ),
@@ -471,24 +602,15 @@ class VentasPage extends StatelessWidget {
     );
   }
 
-  // ⭐️ NUEVO: Widget helper para las filas de detalles de la boleta
   Widget _buildDetailRow(String title, String value) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: const TextStyle(color: Colors.grey, fontSize: 14),
-        ),
+        Text(title, style: const TextStyle(color: Colors.grey, fontSize: 14)),
         const SizedBox(width: 10),
-        // Flexible para que el texto largo (como el ID) se ajuste
         Flexible(
-          child: Text(
-            value,
-            textAlign: TextAlign.end,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-          ),
+          child: Text(value, textAlign: TextAlign.end, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
         ),
       ],
     );

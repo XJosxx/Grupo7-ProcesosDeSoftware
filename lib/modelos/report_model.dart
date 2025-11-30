@@ -1,12 +1,14 @@
-
 class Report {
   final String id;
-  final String productName;
+  final String productName; // Será "Venta #X"
   final int quantity;
   final double subtotal;
   final double igv;
   final double total;
   final DateTime date;
+
+  //Campo para los detalles
+  final List<dynamic> detalles;
 
   Report({
     required this.id,
@@ -16,5 +18,6 @@ class Report {
     required this.igv,
     required this.total,
     required this.date,
+    this.detalles = const [], // Por defecto lista vacía
   });
 }

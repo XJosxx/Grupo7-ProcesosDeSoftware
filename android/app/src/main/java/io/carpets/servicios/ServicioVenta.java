@@ -19,6 +19,9 @@ public interface ServicioVenta {
     MontosCalculados calcularMontosVentaCompleta(List<DetalleVenta> detalles);
     double calcularTotalVenta(List<DetalleVenta> detalles);
 
+    // ⭐️ NUEVO: Calcular ganancia total (Venta - Compra)
+    double calcularGananciaTotal();
+
     BoletaVentaDTO generarBoleta(int ventaId, List<DetalleVenta> detalles);
 
     List<Venta> listarVentas();
