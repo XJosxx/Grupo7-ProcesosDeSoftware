@@ -48,11 +48,6 @@ Si ves errores sobre métodos abstractos o firmas que no coinciden: limpia el bu
 
 Archivo: `app/src/main/java/com/example/myapplication/Configuracion/ConfiguracionBaseDatos.java`.
 
-Por seguridad, NO guardes credenciales en el repositorio. Actualmente el proyecto contiene valores de ejemplo;
-cámbialos por variables de entorno o un archivo `local.properties` no versionado.
-
-Ejemplo recomendado: cargar credenciales desde variables de entorno o `BuildConfig` en Gradle.
-
 ---
 
 ## 5. Integración Flutter — resumen técnico
@@ -65,7 +60,7 @@ Flujo básico:
 
 Ejemplo mínimo en Android (Java) — registro del canal:
 
-// (Código de ejemplo, pero comentado para que no genere errores)
+// (Código de ejemplo)
 
     // import io.flutter.embedding.android.FlutterActivity;
     // import io.flutter.embedding.engine.FlutterEngine;
@@ -133,7 +128,6 @@ Ejemplo de Flutter:
 
 - No subir credenciales a Git.
 - Validar parámetros en Flutter y Android.
-- Considerar migrar a API REST si el proyecto crece.
 
 ---
 
